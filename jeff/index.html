@@ -12,7 +12,7 @@
 html, body{
     margin:0;
     height:100%;
-    background:#2350C6;
+    background:#E6D79E;
     display:flex;
     justify-content:center;
     align-items:center;
@@ -73,7 +73,7 @@ Gallery
 
 async function loadImage(){
 
-    const response = await fetch("jeff.json");
+    const response = await fetch("images.json");
     const files = await response.json();
 
     const images = files.map(f => "images/" + f);
