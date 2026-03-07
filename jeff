@@ -73,7 +73,7 @@ Gallery
 
 async function loadImage(){
 
-    const response = await fetch("images.json");
+    const response = await fetch("jeff.json");
     const files = await response.json();
 
     const images = files.map(f => "images/" + f);
