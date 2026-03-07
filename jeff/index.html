@@ -101,6 +101,9 @@ async function loadImage(){
 }
 document.getElementById("random-image").onclick = function(){
 
+    // disable further clicks immediately
+    this.onclick = null;
+
     this.classList.remove("fade-in");
     this.classList.add("fade-out");
 
