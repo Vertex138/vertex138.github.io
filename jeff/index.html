@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 
 <head>
@@ -12,11 +13,13 @@
 html, body{
     margin:0;
     height:100%;
-    background:#E6D79E;
+    background:#2350C6;
     display:flex;
     justify-content:center;
     align-items:center;
 }
+
+/* Main image */
 
 #random-image{
     max-width:95vw;
@@ -26,6 +29,8 @@ html, body{
     opacity:0;
     animation:fadeIn 0.5s forwards;
 }
+
+/* Fade animations */
 
 @keyframes fadeIn{
     from{opacity:0;}
@@ -40,6 +45,8 @@ html, body{
     from{opacity:1;}
     to{opacity:0;}
 }
+
+/* Gallery button */
 
 #gallery-button{
     position:fixed;
@@ -59,6 +66,7 @@ html, body{
 }
 
 </style>
+
 </head>
 
 <body>
@@ -89,19 +97,22 @@ async function loadImage(){
     sessionStorage.setItem("lastImage", chosen);
 
     const img = document.getElementById("random-image");
-
     img.src = chosen;
 }
 
-document.getElementById("random-image").onclick = function(){
+/* Click image → fade out → reload page */
 
-    this.classList.add("fade-out");
+const img = document.getElementById("random-image");
 
-    setTimeout(()=>{
+img.addEventListener("click", () => {
+
+    img.classList.add("fade-out");
+
+    img.addEventListener("animationend", () => {
         location.reload();
-    },500);
+    }, { once: true });
 
-};
+});
 
 loadImage();
 
