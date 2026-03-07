@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Random Image</title>
+
+<style>
+
+html, body{
+    margin:0;
+    height:100%;
+    background:#2350C6;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+}
+
+#random-image{
+    max-width:95vw;
+    max-height:95vh;
+    object-fit:contain;
+    cursor:pointer;
+    opacity:0;
+    animation:fadeIn 0.5s forwards;
+}
+
+@keyframes fadeIn{
+    from{opacity:0;}
+    to{opacity:1;}
+}
+
+.fade-out{
+    animation:fadeOut 0.5s forwards;
+}
+
+@keyframes fadeOut{
+    from{opacity:1;}
+    to{opacity:0;}
+}
+
+#gallery-button{
+    position:fixed;
+    bottom:2vh;
+    left:2vw;
+    font-size:clamp(12px,1.5vw,18px);
+    padding:1vh 2vw;
+    border:none;
+    border-radius:8px;
+    background:rgba(0,0,0,0.7);
+    color:white;
+    cursor:pointer;
+}
+
+#gallery-button:hover{
+    background:rgba(0,0,0,0.9);
+}
+
+</style>
+</head>
+
+<body>
+
+<img id="random-image">
+
+<button id="gallery-button" onclick="location.href='/gallery'">
+Gallery
+</button>
+
+<script>
+
+async function loadImage(){
+
+    const response = await fetch("images.json");
+    const files = await response.json();
+
+    const images = files.map(f => "images/" + f);
+
+    const last = sessionStorage.getItem("lastImage");
+
+    let options = images.filter(img => img !== last);
+
+    if(options.length === 0) options = images;
+
+    const chosen = options[Math.floor(Math.random()*options.length)];
+
+    sessionStorage.setItem("lastImage", chosen);
+
+    const img = document.getElementById("random-image");
+
+    img.src = chosen;
+}
+
+document.getElementById("random-image").onclick = function(){
+
+    this.classList.add("fade-out");
+
+    setTimeout(()=>{
+        location.reload();
+    },500);
+
+};
+
+loadImage();
+
+</script>
+
+</body>
+</html>
