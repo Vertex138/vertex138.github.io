@@ -24,16 +24,19 @@ html, body{
     object-fit:contain;
     cursor:pointer;
     opacity:0;
+}
+
+.fade-in{
     animation:fadeIn 0.5s forwards;
+}
+
+.fade-out{
+    animation:fadeOut 0.5s forwards;
 }
 
 @keyframes fadeIn{
     from{opacity:0;}
     to{opacity:1;}
-}
-
-.fade-out{
-    animation:fadeOut 0.5s forwards;
 }
 
 @keyframes fadeOut{
@@ -91,10 +94,14 @@ async function loadImage(){
     const img = document.getElementById("random-image");
 
     img.src = chosen;
-}
 
+    img.onload = () => {
+        img.classList.add("fade-in");
+    };
+}
 document.getElementById("random-image").onclick = function(){
 
+    this.classList.remove("fade-in");
     this.classList.add("fade-out");
 
     setTimeout(()=>{
