@@ -93,6 +93,8 @@ async function loadImage(){
 
     const img = document.getElementById("random-image");
 
+    img.classList.remove("fade-in","fade-out");
+
     img.src = chosen;
 
     img.onload = () => {
@@ -101,7 +103,6 @@ async function loadImage(){
 }
 document.getElementById("random-image").onclick = function(){
 
-    // disable further clicks immediately
     this.onclick = null;
 
     this.classList.remove("fade-in");
@@ -109,7 +110,7 @@ document.getElementById("random-image").onclick = function(){
 
     setTimeout(()=>{
         location.reload();
-    },500);
+    },350);
 
 };
 
