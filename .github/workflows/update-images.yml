@@ -40,9 +40,9 @@ jobs:
           max=0
           for f in img_*.*; do
             if [[ $f =~ img_([0-9]+)\. ]]; then
-              num=${BASH_REMATCH[1]}
-              if ((10#$num > max)); then
-                max=$((10#$num))
+              num=$((10#${BASH_REMATCH[1]}))
+              if (( num > max )); then
+                max=$num
               fi
             fi
           done
