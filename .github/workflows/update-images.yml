@@ -26,10 +26,12 @@ jobs:
           # --- convert existing 3-digit filenames to 4-digit ---
           for f in img_[0-9][0-9][0-9].*; do
             if [[ $f =~ img_([0-9]{3})\.(.*) ]]; then
-              num=${BASH_REMATCH[1]}
+          
+              num=$((10#${BASH_REMATCH[1]}))
               ext=${BASH_REMATCH[2]}
+          
               printf -v new "img_%04d.%s" "$num" "$ext"
-
+          
               if [[ "$f" != "$new" ]]; then
                 git mv "$f" "$new"
               fi
