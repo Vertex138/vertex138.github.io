@@ -5,6 +5,9 @@ on:
     paths:
       - 'jeff/images/**'
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -15,12 +18,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Rename new images and generate images.json
+      - name: Rename images and generate index
         run: |
 
           cd jeff/images
 
-          # find highest existing img_### number
+          # --- convert existing 3-digit filenames to 4-digit ---
+          for f in img_[0-9][0-9][0-9].*; do
+            if [[ $f =~ img_([0-9]{3})\.(.*) ]]; then
+              num=${BASH_REMATCH[1]}
+              ext=${BASH_REMATCH[2]}
+              printf -v new "img_%04d.%s" "$num" "$ext"
+
+              if [[ "$f" != "$new" ]]; then
+                git mv "$f" "$new"
+              fi
+            fi
+          done
+
+          # --- find highest existing number ---
           max=0
           for f in img_*.*; do
             if [[ $f =~ img_([0-9]+)\. ]]; then
@@ -31,24 +47,26 @@ jobs:
             fi
           done
 
-          # rename files that don't match the pattern
+          # --- rename new uploads ---
           for f in *; do
             if [[ $f =~ \.(jpg|jpeg|png|gif|webp)$ ]] && [[ ! $f =~ ^img_[0-9]+\. ]]; then
               max=$((max+1))
               ext="${f##*.}"
-              printf -v new "img_%03d.%s" "$max" "$ext"
-              mv "$f" "$new"
+              printf -v new "img_%04d.%s" "$max" "$ext"
+
+              git mv "$f" "$new"
             fi
           done
 
-          # regenerate JSON index
+          # --- regenerate JSON index ---
           ls -1 | grep -Ei '\.(jpg|jpeg|png|gif|webp)$' | sort | jq -R -s -c 'split("\n")[:-1]' > ../images.json
 
-      - name: Commit changes
+      - name: Commit updates
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "actions@github.com"
+
           git add jeff/images/*
           git add jeff/images.json
-          git commit -m "Auto-rename images and update index" || exit 0
+          git commit -m "Auto rename images and update index" || exit 0
           git push
