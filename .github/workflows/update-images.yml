@@ -23,45 +23,42 @@ jobs:
 
           cd jeff/images
 
-          # --- convert existing 3-digit filenames to 4-digit ---
-          for f in img_[0-9][0-9][0-9].*; do
-            if [[ $f =~ img_([0-9]{3})\.(.*) ]]; then
-          
-              num=$((10#${BASH_REMATCH[1]}))
-              ext=${BASH_REMATCH[2]}
-          
-              printf -v new "img_%04d.%s" "$num" "$ext"
-          
-              if [[ "$f" != "$new" ]]; then
-                git mv "$f" "$new"
-              fi
-            fi
-          done
+          # build list of existing numbers
+          declare -A used
 
-          # --- find highest existing number ---
-          max=0
           for f in img_*.*; do
             if [[ $f =~ img_([0-9]+)\. ]]; then
-              num=$((10#${BASH_REMATCH[1]}))
-              if (( num > max )); then
-                max=$num
-              fi
+              n=$((10#${BASH_REMATCH[1]}))
+              used[$n]=1
             fi
           done
 
-          # --- rename new uploads ---
+          # find next available number
+          next=1
+          get_next() {
+            while [[ ${used[$next]} ]]; do
+              ((next++))
+            done
+            echo $next
+          }
+
+          # rename new uploads
           for f in *; do
             if [[ $f =~ \.(jpg|jpeg|png|gif|webp)$ ]] && [[ ! $f =~ ^img_[0-9]+\. ]]; then
-              max=$((max+1))
+
+              n=$(get_next)
+              used[$n]=1
+              next=$((n+1))
+
               ext="${f##*.}"
-              printf -v new "img_%04d.%s" "$max" "$ext"
+              printf -v new "img_%04d.%s" "$n" "$ext"
 
               git mv "$f" "$new"
             fi
           done
 
-          # --- regenerate JSON index ---
-          ls -1 | grep -Ei '\.(jpg|jpeg|png|gif|webp)$' | sort | jq -R -s -c 'split("\n")[:-1]' > ../images.json
+          # regenerate JSON index (multiline format)
+          ls -1 | grep -Ei '\.(jpg|jpeg|png|gif|webp)$' | sort | jq -R . | jq -s . > ../images.json
 
       - name: Commit updates
         run: |
