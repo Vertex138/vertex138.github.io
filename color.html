@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Gradient Text Generator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #1e1e1e;
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .container {
+      background: #2a2a2a;
+      padding: 20px;
+      border-radius: 12px;
+      width: 460px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.5);
+    }
+    h2 {
+        margin-top: 0; 
+        margin-bottom: -8px;
+    }
+    input, textarea, select, button {
+      width: 100%;
+      margin: 8px 0;
+      padding: 8px;
+      border-radius: 6px;
+      border: none;
+      box-sizing: border-box;
+    }
+    button {
+      background: #4caf50;
+      color: white;
+      cursor: pointer;
+    }
+    button.secondary {
+      background: #3a7bd5;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .inline {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 6px;
+    }
+    .inline input[type="checkbox"] { width: auto; }
+
+    /* Bigger color picker */
+    input[type="color"] {
+      height: 40px;
+      padding: 4px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    pre {
+      background: #111;
+      padding: 10px;
+      border-radius: 6px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 140px;
+      overflow: auto;
+    }
+
+    .preview {
+      background: #000;
+      padding: 10px;
+      border-radius: 6px;
+      margin-top: 10px;
+      min-height: 40px;
+      font-weight: bold;
+      word-wrap: break-word;
+    }
+
+    .hint {
+      font-size: 12px;
+      color: #aaa;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Gradient Text Generator</h2>
+    <h3>Intended for Last Asylum: Plague</h3>
+
+    <label>Start Color</label>
+    <div class="row">
+      <input id="col1" placeholder="e.g. ffffff or ffffffff">
+      <input id="col1picker" type="color" value="#ffffff" disabled>
+    </div>
+
+    <label>End Color</label>
+    <div class="row">
+      <input id="col2" placeholder="e.g. 000000 or 000000ff">
+      <input id="col2picker" type="color" value="#000000" disabled>
+    </div>
+
+    <div class="inline">
+      <input type="checkbox" id="usePicker">
+      <label for="usePicker">Use visual color pickers</label>
+    </div>
+
+    <label>Text</label>
+    <textarea id="text" rows="3"></textarea>
+
+    <label>Gradient Direction</label>
+    <select id="direction">
+      <option value="forward">Forward (col1 → col2)</option>
+      <option value="reverse">Reverse (col2 → col1)</option>
+      <option value="mirror">Mirrored (col1 → col2 → col1)</option>
+    </select>
+
+    <label>Footer</label>
+    <select id="footerMode">
+      <option value="false">None</option>
+      <option value="true">Default (405572ff)</option>
+      <option value="custom">Custom</option>
+    </select>
+
+    <input id="footerValue" placeholder="Custom footer hex (optional)">
+
+    <div class="row">
+      <button onclick="generate()">Generate</button>
+      <button class="secondary" onclick="copyOutput()">Copy</button>
+    </div>
+
+    <h3>Output:</h3>
+    <pre id="output"></pre>
+    <div class="hint" id="copyStatus"></div>
+
+    <h3>Live Preview*:</h3>
+    <div class="preview" id="preview"></div>
+    <body><b>*</b><i>Does not display alpha channel</i></body>
+
+  </div>
+
+  <script>
+    function normalizeHex(hex) {
+      hex = (hex || '').toLowerCase().replace(/#/g, '').trim();
+      if (hex.length === 6) return hex + 'ff';
+      if (hex.length === 8) return hex;
+      throw new Error('Hex must be 6 or 8 characters');
+    }
+
+    function hexToRgba(hex) {
+      let arr = [];
+      for (let i = 0; i < 8; i += 2) {
+        arr.push(parseInt(hex.substring(i, i + 2), 16));
+      }
+      return arr;
+    }
+
+    function rgbaToHex(rgba) {
+      return rgba.map(v => v.toString(16).padStart(2, '0')).join('');
+    }
+
+    function pickerToHexWithAlpha(colorHex, alphaHex = 'ff') {
+      return colorHex.replace('#', '') + alphaHex;
+    }
+
+    function updatePickerState() {
+      const enabled = document.getElementById('usePicker').checked;
+      document.getElementById('col1picker').disabled = !enabled;
+      document.getElementById('col2picker').disabled = !enabled;
+    }
+
+    document.getElementById('usePicker').addEventListener('change', updatePickerState);
+
+    function generate() {
+      try {
+        let usePicker = document.getElementById('usePicker').checked;
+
+        let col1 = usePicker
+          ? pickerToHexWithAlpha(document.getElementById('col1picker').value)
+          : normalizeHex(document.getElementById('col1').value);
+
+        let col2 = usePicker
+          ? pickerToHexWithAlpha(document.getElementById('col2picker').value)
+          : normalizeHex(document.getElementById('col2').value);
+
+        let direction = document.getElementById('direction').value;
+        let text = document.getElementById('text').value;
+
+        let start = hexToRgba(col1);
+        let end = hexToRgba(col2);
+
+        let chars = text.split('').filter(c => c !== ' ');
+        let length = chars.length;
+
+        let result = '';
+        let previewHTML = '';
+        let index = 0;
+
+        function getT(i, len) {
+          if (len <= 1) return 0;
+          let base = i / (len - 1);
+
+          if (direction === 'forward') return base;
+          if (direction === 'reverse') return 1 - base;
+          if (direction === 'mirror') {
+            if (base <= 0.5) return base * 2;
+            return (1 - base) * 2;
+          }
+        }
+
+        for (let char of text) {
+          if (char === ' ') {
+            result += ' ';
+            previewHTML += ' ';
+            continue;
+          }
+
+          let t = getT(index, length);
+
+          let interpolated = start.map((v, j) =>
+            Math.round(v + (end[j] - v) * t)
+          );
+
+          let hex = rgbaToHex(interpolated);
+          result += `[${hex}]${char}`;
+
+          let rgb = interpolated.slice(0, 3);
+          previewHTML += `<span style="color: rgb(${rgb.join(',')})">${char}</span>`;
+
+          index++;
+        }
+
+        // Footer
+        let footerMode = document.getElementById('footerMode').value;
+        let footerValue = document.getElementById('footerValue').value;
+
+        if (footerMode === 'true') {
+          result += '[405572ff]';
+        } else if (footerMode === 'custom') {
+          let footerHex = normalizeHex(footerValue);
+          result += `[${footerHex}]`;
+        }
+
+        document.getElementById('output').textContent = result;
+        document.getElementById('preview').innerHTML = previewHTML;
+        document.getElementById('copyStatus').textContent = '';
+
+      } catch (err) {
+        document.getElementById('output').textContent = 'Error: ' + err.message;
+        document.getElementById('preview').innerHTML = '';
+      }
+    }
+
+    async function copyOutput() {
+      const text = document.getElementById('output').textContent;
+      const status = document.getElementById('copyStatus');
+      if (!text) return;
+
+      try {
+        await navigator.clipboard.writeText(text);
+        status.textContent = 'Copied to clipboard!';
+      } catch {
+        status.textContent = 'Copy failed (browser permission issue).';
+      }
+    }
+  </script>
+</body>
+</html>
