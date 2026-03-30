@@ -2,62 +2,69 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gradient Text Generator</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       background: #1e1e1e;
       color: #fff;
+      margin: 0;
+      padding: 10px;
       display: flex;
       justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
     }
+
     .container {
       background: #2a2a2a;
-      padding: 20px;
+      padding: 16px;
       border-radius: 12px;
-      width: 460px;
+      width: 100%;
+      max-width: 480px;
       box-shadow: 0 0 15px rgba(0,0,0,0.5);
     }
-    h2 {
-        margin-top: 0; 
-        margin-bottom: -8px;
-    }
+
+    h2 { margin-top: 0; font-size: 1.4rem; }
+
     input, textarea, select, button {
       width: 100%;
       margin: 8px 0;
-      padding: 8px;
-      border-radius: 6px;
+      padding: 10px;
+      border-radius: 8px;
       border: none;
       box-sizing: border-box;
+      font-size: 1rem;
     }
+
     button {
       background: #4caf50;
       color: white;
       cursor: pointer;
     }
+
     button.secondary {
       background: #3a7bd5;
     }
+
     .row {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 8px;
     }
+
     .inline {
       display: flex;
       align-items: center;
       gap: 8px;
       margin-top: 6px;
+      font-size: 0.9rem;
     }
+
     .inline input[type="checkbox"] { width: auto; }
 
-    /* Bigger color picker */
     input[type="color"] {
-      height: 40px;
-      padding: 4px;
+      height: 45px;
+      padding: 0;
       border-radius: 6px;
       cursor: pointer;
     }
@@ -70,6 +77,7 @@
       word-break: break-word;
       max-height: 140px;
       overflow: auto;
+      font-size: 0.9rem;
     }
 
     .preview {
@@ -80,18 +88,38 @@
       min-height: 40px;
       font-weight: bold;
       word-wrap: break-word;
+      font-size: 1.1rem;
     }
 
     .hint {
       font-size: 12px;
       color: #aaa;
     }
+
+    /* Mobile tweaks */
+    @media (max-width: 500px) {
+      .row {
+        grid-template-columns: 1fr;
+      }
+
+      h2 {
+        font-size: 1.2rem;
+      }
+
+      input, textarea, select, button {
+        font-size: 1rem;
+        padding: 12px;
+      }
+
+      .preview {
+        font-size: 1.2rem;
+      }
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <h2>Gradient Text Generator</h2>
-    <h3>Intended for Last Asylum: Plague</h3>
 
     <label>Start Color</label>
     <div class="row">
@@ -230,12 +258,11 @@
           result += `[${hex}]${char}`;
 
           let rgb = interpolated.slice(0, 3);
-          previewHTML += `<span style="color: rgb(${rgb.join(',')})">${char}</span>`;
+          previewHTML += `<span style=\"color: rgb(${rgb.join(',')})\">${char}</span>`;
 
           index++;
         }
 
-        // Footer
         let footerMode = document.getElementById('footerMode').value;
         let footerValue = document.getElementById('footerValue').value;
 
