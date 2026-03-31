@@ -3,292 +3,349 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gradient Text Generator</title>
+<title>Stylized Text Generator</title>
 <link rel="icon" href="/color/favicon.ico" type="image/x-icon">
-
 <style>
-body {
-  font-family: Arial, sans-serif;
-  background: #1e1e1e;
-  color: #fff;
-  margin: 0;
-  padding: 10px;
-  display: flex;
-  justify-content: center;
-}
-
-.container {
-  background: #2a2a2a;
-  padding: 16px;
-  border-radius: 12px;
-  width: 100%;
-  max-width: 480px;
-  box-shadow: 0 0 15px rgba(0,0,0,0.5);
-}
-
-input, textarea, select, button {
-  width: 100%;
-  margin: 8px 0;
-  padding: 10px;
-  border-radius: 8px;
-  border: none;
-  box-sizing: border-box;
-  font-size: 1rem;
-}
-
-button.secondary { background: #3a7bd5; }
-
-.row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-
-/* ✅ FIX: keep side-by-side even on mobile */
-@media (max-width: 500px) {
-  .row {
-    grid-template-columns: 1fr 80px;
+  body {
+    font-family: Arial, sans-serif;
+    background: #1e1e1e;
+    color: #fff;
+    margin: 0;
+    padding: 10px;
+    display: flex;
+    justify-content: center;
   }
-}
 
-input[type="color"] {
-  height: 45px;
-  padding: 0;
-}
+  .container {
+    background: #2a2a2a;
+    padding: 16px;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 480px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.5);
+  }
 
-pre {
-  background: #111;
-  padding: 10px;
-  border-radius: 6px;
-  max-height: 140px;
-  overflow: auto;
-}
+  h1 { margin-top: 0; margin-bottom: 0.2rem; font-size: 1.5rem; }
+  h2 { margin-top: 0; margin-bottom: 0.5rem; font-size: 1.2rem; color: #bbb;}
+  h3 { margin-top: 0; margin-bottom: 0.5rem; font-size: 1.2rem; }
 
-.preview {
-  background: #000;
-  padding: 10px;
-  border-radius: 6px;
-  margin-top: 10px;
-  font-weight: bold;
-}
+  input, textarea, select, button {
+    width: 100%;
+    margin: 8px 0;
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+    box-sizing: border-box;
+    font-size: 1rem;
+  }
+
+  button { background: #4caf50; color: white; cursor: pointer; }
+  button.secondary { background: #3a7bd5; }
+
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  input[type="color"] {
+    height: 45px;
+    padding: 0;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  .inline { display: flex; gap: 12px; justify-content: center; margin-top: 6px; font-size: 0.95rem; }
+
+  .inline label { cursor: pointer; }
+
+  .alphaRow { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+
+  pre {
+    background: #111;
+    padding: 10px;
+    border-radius: 6px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 140px;
+    overflow: auto;
+    font-size: 0.9rem;
+  }
+
+  .preview {
+    background: #d2e0eb;
+    padding: 10px;
+    border-radius: 6px;
+    margin-top: 10px;
+    min-height: 40px;
+    word-wrap: break-word;
+    font-size: 1.1rem;
+  }
+
+  .hint { font-size: 12px; color: #bbb; margin-top: 0.5rem; }
+
+  .copyButton {
+    text-align: center;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 4px;
+    padding: 10px;
+    border-radius: 8px;
+    background-color: #3a7bd5;
+    color: #fff;
+  }
+
+  @media (max-width: 500px) {
+    .row { grid-template-columns: 1fr; }
+  }
+
+  textarea#text {
+    background: #a3cce8;
+    color: #405572;
+  }
 </style>
 </head>
-
 <body>
 <div class="container">
+  <h1>Stylized Text Generator</h1>
+  <h2>Intended for use in <i>Last Asylum: Plague.</i></h2>
+  
+  <hr><br>
 
-<h2>Colorful Text Generator</h2>
-<h3>Intended for use in <i>Last Asylum: Plague.</i></h3>
+  <h3>Input text</h3>
+  <textarea id="text" rows="3" placeholder="Type your plain text here..."></textarea>
 
-<label>Primary Color (col1)</label>
-<div class="row">
-  <input id="col1">
-  <input id="col1picker" type="color" value="#ffffff">
-</div>
+  <hr>
 
-<label>Secondary Color (col2)</label>
-<div class="row">
-  <input id="col2">
-  <input id="col2picker" type="color" value="#000000">
-</div>
+  <h3>Formatting</h3>
+  <div class="inline" style="justify-content:center; flex-wrap:nowrap;">
+    <label style="font-weight:bold; margin-right:12px; display:flex; align-items:center;">
+      <input type="checkbox" id="bold" style="margin-right:4px;"> Bold
+    </label>
+    <label style="font-style:italic; margin-right:12px; display:flex; align-items:center;">
+      <input type="checkbox" id="italic" style="margin-right:4px;"> Italics
+    </label>
+    <label style="text-decoration:underline; margin-right:12px; display:flex; align-items:center;">
+      <input type="checkbox" id="underline" style="margin-right:4px;"> Underline
+    </label>
+    <label style="text-decoration:line-through; display:flex; align-items:center;">
+      <input type="checkbox" id="strikethrough" style="margin-right:4px;"> Strikethrough
+    </label>
+  </div>
 
-<label>Text</label>
-<textarea id="text"></textarea>
+  <hr>
 
-<label>Color Pattern</label>
-<select id="pattern">
-  <option value="primary">Primary Color (col1)</option>
-  <option value="secondary">Secondary Color (col2)</option>
-  <option value="forward">Forward Gradient (col1 → col2)</option>
-  <option value="reverse">Reverse Gradient (col2 → col1)</option>
-  <option value="mirror">Mirror Gradient (col1 → col2 → col1)</option>
-  <option value="reverseMirror">Alt. Mirror Gradient (col2 → col1 → col2)</option>
-</select>
+  <h3>Color Pattern</h3>
+  <select id="pattern">
+    <option value="none">No Color Change</option>
+    <option value="primary">Primary Color (col1)</option>
+    <option value="secondary">Secondary Color (col2)</option>
+    <option value="forward">Forward Gradient (col1 > col2)</option>
+    <option value="reverse">Reverse Gradient (col2 > col1)</option>
+    <option value="mirror">Mirror Gradient (col1 > col2 > col1)</option>
+    <option value="reverseMirror">Alt Mirror Gradient (col2 > col1 > col2)</option>
+  </select>
 
-<label>Footer</label>
-<select id="footerMode">
-  <option value="false">None</option>
-  <option value="true">Default</option>
-  <option value="custom">Custom</option>
-</select>
+  <div id="colorPickers">
+    <label>Primary Color (col1)</label>
+    <input id="col1picker" type="color" value="#008893">
+    <div class="alphaRow">
+      <input type="text" id="col1alphaText" value="ff" maxlength="2" style="width:50px; text-align:center;">
+      <input type="range" id="col1alpha" min="0" max="255" value="255">
+    </div>
 
-<div id="footerCustom" class="row" style="display:none;">
-  <input id="footerValue">
-  <input id="footerPicker" type="color" value="#405572">
-</div>
+    <label>Secondary Color (col2)</label>
+    <input id="col2picker" type="color" value="#5ad859">
+    <div class="alphaRow">
+      <input type="text" id="col2alphaText" value="ff" maxlength="2" style="width:50px; text-align:center;">
+      <input type="range" id="col2alpha" min="0" max="255" value="255">
+    </div>
+  </div>
 
-<div class="row">
-  <button class="secondary" onclick="copyOutput()">Copy</button>
-</div>
+  <hr>
 
-<h3>Output:</h3>
-<pre id="output"></pre>
+  <h3>Footer</h3>
+  <select id="footerMode">
+    <option value="false">None</option>
+    <option value="true">Default (405572ff)</option>
+    <option value="custom">Custom</option>
+  </select>
+  <div class="hint">This is the color of the text that will follow your generated string. Default is the game's regular text color, and will look the most natural.</div>
 
-<h3>Live Preview <b>*</b>:</h3>
-<div id="preview" class="preview"></div>
-<div class="hint"><b>*</b><i> Will not display changes to alpha.</i></div>
+  <div id="footerPickerDiv" style="display:none;">
+    <input id="footerColorPicker" type="color" value="#405572">
+    <div class="alphaRow">
+      <input type="text" id="footerAlphaText" value="ff" maxlength="2" style="width:50px; text-align:center;">
+      <input type="range" id="footerAlpha" min="0" max="255" value="255">
+    </div>
+  </div>
 
+  <hr>
+
+  <h3>Output:</h3>
+  <pre id="output"></pre>
+  <div class="copyButton" id="copyButton">Copy</div>
+
+  <h3>Live Preview <b>*</b>:</h3>
+  <div class="preview" id="preview"></div>
+  <div class="hint"><b>*</b><i> Will not display changes to alpha.</i></div>
 </div>
 
 <script>
-function normalizeHex(hex) {
-  hex = (hex || '').toLowerCase().replace(/#/g, '').trim();
-  if (hex.length === 6) return hex + 'ff';
-  if (hex.length === 8) return hex;
-  throw new Error('invalid');
-}
-
-function tryNormalize(hex) {
-  hex = (hex || '').toLowerCase().replace(/#/g, '').trim();
-
-  if (hex.length === 6) return hex + 'ff';
-  if (hex.length === 8) return hex;
-
-  return null;
-}
-
 function hexToRgba(hex) {
-  return hex.match(/.{2}/g).map(x => parseInt(x,16));
+  let arr = [];
+  for (let i = 0; i < 8; i += 2) {
+    arr.push(parseInt(hex.substring(i, i + 2),16));
+  }
+  return arr;
 }
 
-function rgbaToHex(rgba) {
-  return rgba.map(v => v.toString(16).padStart(2,'0')).join('');
+function rgbaToHex(rgba){
+  return rgba.map(v=>v.toString(16).padStart(2,'0')).join('');
 }
 
-function hexToPicker(hex) {
-  const n = tryNormalize(hex);
-  return n ? '#' + n.substring(0,6) : null;
+function normalizeHex(hex) {
+  hex = (hex||'').replace('#','').trim().toLowerCase();
+  if(hex.length===6) return hex+'ff';
+  if(hex.length===8) return hex;
+  throw new Error('Hex must be 6 or 8 characters');
 }
 
-function syncTextToPicker(textId, pickerId) {
-  const val = document.getElementById(textId).value;
-  const p = hexToPicker(val);
-  if (p) document.getElementById(pickerId).value = p;
+function alphaSliderToHex(sliderVal){
+  return Number(sliderVal).toString(16).padStart(2,'0');
 }
 
-function syncPickerToText(pickerId, textId) {
-  const val = document.getElementById(pickerId).value;
-  document.getElementById(textId).value = val.replace('#','') + 'ff';
-}
-
-function updateFooterState() {
-  const mode = document.getElementById('footerMode').value;
-  document.getElementById('footerCustom').style.display =
-    (mode === 'custom') ? 'grid' : 'none';
-}
-
-syncTextToPicker('footerValue', 'footerPicker');
-
-document.getElementById('footerMode').addEventListener('input', updateFooterState);
-updateFooterState();
-
-document.getElementById('footerValue').addEventListener('input', () => {
-  syncTextToPicker('footerValue', 'footerPicker');
-  generate();
-});
-
-document.getElementById('footerPicker').addEventListener('input', () => {
-  syncPickerToText('footerPicker', 'footerValue');
-  generate();
-});
-
-function generate() {
-  try {
-    const pattern = document.getElementById('pattern').value;
-    const text = document.getElementById('text').value;
-
-    let errors = [];
-
-    let col1 = tryNormalize(document.getElementById('col1').value);
-    let col2 = tryNormalize(document.getElementById('col2').value);
-
-    // ✅ Only validate what's needed
-    if (pattern === 'primary' && !col1) errors.push('col1');
-    if (pattern === 'secondary' && !col2) errors.push('col2');
-    if (!['primary','secondary'].includes(pattern)) {
-      if (!col1) errors.push('col1');
-      if (!col2) errors.push('col2');
-    }
-
-    let footerMode = document.getElementById('footerMode').value;
-    let footer = null;
-
-    if (footerMode === 'custom') {
-      footer = tryNormalize(document.getElementById('footerValue').value);
-      if (!footer) errors.push('footer');
-    }
-
-    if (errors.length) {
-      throw new Error("Invalid: " + errors.join(', '));
-    }
-
-    let result = '';
-    let preview = '';
-
-    if (pattern === 'primary' || pattern === 'secondary') {
-      let chosen = (pattern === 'primary') ? col1 : col2;
-      result = `[${chosen}]${text}`;
-      preview = `<span style="color: rgb(${hexToRgba(chosen).slice(0,3)})">${text}</span>`;
-    } else {
-      let start = hexToRgba(col1);
-      let end = hexToRgba(col2);
-
-      let chars = text.replace(/ /g,'').length;
-      let index = 0;
-
-      for (let c of text) {
-        if (c === ' ') { result+=' '; preview+=' '; continue; }
-
-        let base = chars <=1 ? 0 : index/(chars-1);
-
-        let t =
-          pattern==='forward'?base:
-          pattern==='reverse'?1-base:
-          pattern==='mirror'?(base<=0.5?base*2:(1-base)*2):
-          (1-(base<=0.5?base*2:(1-base)*2));
-
-        let rgba = start.map((v,i)=>Math.round(v+(end[i]-v)*t));
-        let hex = rgbaToHex(rgba);
-
-        result += `[${hex}]${c}`;
-        preview += `<span style="color: rgb(${rgba.slice(0,3)})">${c}</span>`;
-        index++;
+function bindAlpha(sliderId,textId){
+  const slider=document.getElementById(sliderId);
+  const text=document.getElementById(textId);
+  slider.addEventListener('input',()=>{
+    text.value=alphaSliderToHex(slider.value);
+    generate();
+  });
+  text.addEventListener('input',()=>{
+    let val=text.value.trim();
+    if(/^[0-9a-fA-F]{0,2}$/.test(val)){
+      if(val.length===2){
+        slider.value=parseInt(val,16);
+        generate();
       }
+    }else{
+      text.value=text.value.replace(/[^0-9a-fA-F]/g,'').substring(0,2);
+    }
+  });
+}
+
+bindAlpha('col1alpha','col1alphaText');
+bindAlpha('col2alpha','col2alphaText');
+bindAlpha('footerAlpha','footerAlphaText');
+
+document.getElementById('footerMode').addEventListener('change',()=>{
+  const mode=document.getElementById('footerMode').value;
+  document.getElementById('footerPickerDiv').style.display=(mode==='custom')?'block':'none';
+  generate();
+});
+
+['text','pattern','col1picker','col2picker','footerColorPicker','bold','italic','underline','strikethrough'].forEach(id=>{
+  document.getElementById(id).addEventListener('input',generate);
+});
+
+function generate(){
+  try{
+    let text=document.getElementById('text').value;
+    let pattern=document.getElementById('pattern').value;
+    let bold=document.getElementById('bold').checked;
+    let italic=document.getElementById('italic').checked;
+    let underline=document.getElementById('underline').checked;
+    let strikethrough=document.getElementById('strikethrough').checked;
+
+    let col1=document.getElementById('col1picker').value.substring(1)+document.getElementById('col1alphaText').value;
+    let col2=document.getElementById('col2picker').value.substring(1)+document.getElementById('col2alphaText').value;
+    let footerMode=document.getElementById('footerMode').value;
+    let footer=document.getElementById('footerColorPicker')?document.getElementById('footerColorPicker').value.substring(1)+document.getElementById('footerAlphaText').value:'';
+
+    let result='';
+    let previewHTML='';
+
+    // Apply formatting tags
+    let startTags='';
+    let endTags='';
+    if(bold){startTags+='<b r>';endTags='</b>'+endTags;}
+    if(italic){startTags+='<i r>';endTags='</i>'+endTags;}
+    if(underline){startTags+='<u r>';endTags='</u>'+endTags;}
+    if(strikethrough){startTags+='<s r>';endTags='</s>'+endTags;}
+
+    if(pattern==='none'){
+      result=startTags+text+endTags;
+      previewHTML=text;
+      if(bold) previewHTML='<b>'+previewHTML+'</b>';
+      if(italic) previewHTML='<i>'+previewHTML+'</i>';
+      if(underline) previewHTML='<span style="text-decoration:underline; color:#405572;">'+previewHTML+'</span>';
+      if(strikethrough) previewHTML='<span style="text-decoration:line-through; color:#405572;">'+previewHTML+'</span>';
+      previewHTML='<span style="color:#405572;">'+previewHTML+'</span>';
+    } else if(pattern==='primary' || pattern==='secondary'){
+      let chosen=(pattern==='primary')?col1:col2;
+      result=startTags+'['+chosen+']'+text+endTags;
+      let rgb=hexToRgba(chosen).slice(0,3);
+      previewHTML='<span style="color: rgb('+rgb.join(',')+')">'+text+'</span>';
+      if(bold) previewHTML='<b>'+previewHTML+'</b>';
+      if(italic) previewHTML='<i>'+previewHTML+'</i>';
+      if(underline) previewHTML='<span style="text-decoration:underline; color:#405572;">'+previewHTML+'</span>';
+      if(strikethrough) previewHTML='<span style="text-decoration:line-through; color:#405572;">'+previewHTML+'</span>';
+    } else {
+      let start=hexToRgba(col1);
+      let end=hexToRgba(col2);
+      let chars=text.split('');
+      let length=chars.filter(c=>c!==' ').length;
+      let index=0;
+
+      function getT(i){
+        if(length<=1) return 0;
+        let base=i/(length-1);
+        if(pattern==='forward') return base;
+        if(pattern==='reverse') return 1-base;
+        if(pattern==='mirror') return base<=0.5?base*2:(1-base)*2;
+        if(pattern==='reverseMirror') return 1-(base<=0.5?base*2:(1-base)*2);
+      }
+
+      for(let char of chars){
+        if(char===' '){result+=' '; previewHTML+=' '; continue;}
+        if(char==='\n'){result+='\n'; previewHTML+='<br>'; continue;}
+        let t=getT(index++);
+        let interpolated=start.map((v,j)=>Math.round(v+(end[j]-v)*t));
+        let hex=rgbaToHex(interpolated);
+        result+='['+hex+']'+char;
+        let rgb=interpolated.slice(0,3);
+        previewHTML+='<span style="color: rgb('+rgb.join(',')+')">'+char+'</span>';
+      }
+      if(bold) previewHTML='<b>'+previewHTML+'</b>';
+      if(italic) previewHTML='<i>'+previewHTML+'</i>';
+      if(underline) previewHTML='<span style="text-decoration:underline; color:#405572;">'+previewHTML+'</span>';
+      if(strikethrough) previewHTML='<span style="text-decoration:line-through; color:#405572;">'+previewHTML+'</span>';
     }
 
-    if (footerMode === 'true') result += '[405572ff]';
-    if (footerMode === 'custom') result += `[${footer}]`;
+    if(footerMode==='true'){result+='[405572ff]';}
+    if(footerMode==='custom'){result+='['+footer+']';}
 
-    document.getElementById('output').textContent = result;
-    document.getElementById('preview').innerHTML = preview;
-
-  } catch (err) {
-    document.getElementById('output').textContent = err.message;
-    document.getElementById('preview').innerHTML = '';
+    document.getElementById('output').textContent=result;
+    document.getElementById('preview').innerHTML=previewHTML;
+  }catch(err){
+    document.getElementById('output').textContent='Error: '+err.message;
+    document.getElementById('preview').innerHTML='';
   }
 }
 
-async function copyOutput() {
-  const text = document.getElementById('output').textContent;
-  if (!text) return;
-  await navigator.clipboard.writeText(text);
-}
-
-// Sync listeners
-['col1','col2','footerValue'].forEach(id=>{
-  document.getElementById(id).addEventListener('input',generate);
+document.getElementById('copyButton').addEventListener('click',async ()=>{
+  const text=document.getElementById('output').textContent;
+  if(!text) return;
+  const btn=document.getElementById('copyButton');
+  try{
+    await navigator.clipboard.writeText(text);
+    const orig=btn.textContent;
+    btn.textContent='Copied to clipboard!';
+    btn.style.background='#4caf50';
+    setTimeout(()=>{btn.textContent=orig; btn.style.background='#3a7bd5';},1500);
+  }catch{
+    btn.textContent='Copy failed';
+  }
 });
 
-document.getElementById('col1').addEventListener('input',()=>syncTextToPicker('col1','col1picker'));
-document.getElementById('col2').addEventListener('input',()=>syncTextToPicker('col2','col2picker'));
-
-document.getElementById('col1picker').addEventListener('input',()=>syncPickerToText('col1picker','col1'));
-document.getElementById('col2picker').addEventListener('input',()=>syncPickerToText('col2picker','col2'));
-document.getElementById('footerPicker').addEventListener('input',()=>syncPickerToText('footerPicker','footerValue'));
-
-['text','pattern','footerMode'].forEach(id=>{
-  document.getElementById(id).addEventListener('input',generate);
-});
+generate();
 </script>
 </body>
 </html>
