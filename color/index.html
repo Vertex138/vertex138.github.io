@@ -1,300 +1,293 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gradient Text Generator</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #1e1e1e;
-      color: #fff;
-      margin: 0;
-      padding: 10px;
-      display: flex;
-      justify-content: center;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gradient Text Generator</title>
 
-    .container {
-      background: #2a2a2a;
-      padding: 16px;
-      border-radius: 12px;
-      width: 100%;
-      max-width: 480px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.5);
-    }
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #1e1e1e;
+  color: #fff;
+  margin: 0;
+  padding: 10px;
+  display: flex;
+  justify-content: center;
+}
 
-    h2 { margin-top: 0; font-size: 1.4rem; }
+.container {
+  background: #2a2a2a;
+  padding: 16px;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 0 15px rgba(0,0,0,0.5);
+}
 
-    input, textarea, select, button {
-      width: 100%;
-      margin: 8px 0;
-      padding: 10px;
-      border-radius: 8px;
-      border: none;
-      box-sizing: border-box;
-      font-size: 1rem;
-    }
+input, textarea, select, button {
+  width: 100%;
+  margin: 8px 0;
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+  box-sizing: border-box;
+  font-size: 1rem;
+}
 
-    button {
-      background: #4caf50;
-      color: white;
-      cursor: pointer;
-    }
+button.secondary { background: #3a7bd5; }
 
-    button.secondary {
-      background: #3a7bd5;
-    }
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
 
-    .row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-    }
+/* ✅ FIX: keep side-by-side even on mobile */
+@media (max-width: 500px) {
+  .row {
+    grid-template-columns: 1fr 80px;
+  }
+}
 
-    .inline {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-top: 6px;
-      font-size: 0.9rem;
-    }
+input[type="color"] {
+  height: 45px;
+  padding: 0;
+}
 
-    .inline input[type="checkbox"] { width: auto; }
+pre {
+  background: #111;
+  padding: 10px;
+  border-radius: 6px;
+  max-height: 140px;
+  overflow: auto;
+}
 
-    input[type="color"] {
-      height: 45px;
-      padding: 0;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-
-    pre {
-      background: #111;
-      padding: 10px;
-      border-radius: 6px;
-      white-space: pre-wrap;
-      word-break: break-word;
-      max-height: 140px;
-      overflow: auto;
-      font-size: 0.9rem;
-    }
-
-    .preview {
-      background: #000;
-      padding: 10px;
-      border-radius: 6px;
-      margin-top: 10px;
-      min-height: 40px;
-      font-weight: bold;
-      word-wrap: break-word;
-      font-size: 1.1rem;
-    }
-
-    .hint {
-      font-size: 12px;
-      color: #aaa;
-    }
-
-    /* Mobile tweaks */
-    @media (max-width: 500px) {
-      .row {
-        grid-template-columns: 1fr;
-      }
-
-      h2 {
-        font-size: 1.2rem;
-      }
-
-      input, textarea, select, button {
-        font-size: 1rem;
-        padding: 12px;
-      }
-
-      .preview {
-        font-size: 1.2rem;
-      }
-    }
-  </style>
+.preview {
+  background: #000;
+  padding: 10px;
+  border-radius: 6px;
+  margin-top: 10px;
+  font-weight: bold;
+}
+</style>
 </head>
+
 <body>
-  <div class="container">
-    <h2>Gradient Text Generator</h2>
+<div class="container">
 
-    <label>Start Color</label>
-    <div class="row">
-      <input id="col1" placeholder="e.g. ffffff or ffffffff">
-      <input id="col1picker" type="color" value="#ffffff" disabled>
-    </div>
+<h2>Colorful Text Generator</h2>
+<h3>Intended for use in <i>Last Asylum: Plague.</i></h3>
 
-    <label>End Color</label>
-    <div class="row">
-      <input id="col2" placeholder="e.g. 000000 or 000000ff">
-      <input id="col2picker" type="color" value="#000000" disabled>
-    </div>
+<label>Primary Color (col1)</label>
+<div class="row">
+  <input id="col1">
+  <input id="col1picker" type="color" value="#ffffff">
+</div>
 
-    <div class="inline">
-      <input type="checkbox" id="usePicker">
-      <label for="usePicker">Use visual color pickers</label>
-    </div>
+<label>Secondary Color (col2)</label>
+<div class="row">
+  <input id="col2">
+  <input id="col2picker" type="color" value="#000000">
+</div>
 
-    <label>Text</label>
-    <textarea id="text" rows="3"></textarea>
+<label>Text</label>
+<textarea id="text"></textarea>
 
-    <label>Gradient Direction</label>
-    <select id="direction">
-      <option value="forward">Forward (col1 → col2)</option>
-      <option value="reverse">Reverse (col2 → col1)</option>
-      <option value="mirror">Mirrored (col1 → col2 → col1)</option>
-    </select>
+<label>Color Pattern</label>
+<select id="pattern">
+  <option value="primary">Primary Color (col1)</option>
+  <option value="secondary">Secondary Color (col2)</option>
+  <option value="forward">Forward Gradient (col1 → col2)</option>
+  <option value="reverse">Reverse Gradient (col2 → col1)</option>
+  <option value="mirror">Mirror Gradient (col1 → col2 → col1)</option>
+  <option value="reverseMirror">Alt. Mirror Gradient (col2 → col1 → col2)</option>
+</select>
 
-    <label>Footer</label>
-    <select id="footerMode">
-      <option value="false">None</option>
-      <option value="true">Default (405572ff)</option>
-      <option value="custom">Custom</option>
-    </select>
+<label>Footer</label>
+<select id="footerMode">
+  <option value="false">None</option>
+  <option value="true">Default</option>
+  <option value="custom">Custom</option>
+</select>
 
-    <input id="footerValue" placeholder="Custom footer hex (optional)">
+<div id="footerCustom" class="row" style="display:none;">
+  <input id="footerValue">
+  <input id="footerPicker" type="color" value="#405572">
+</div>
 
-    <div class="row">
-      <button onclick="generate()">Generate</button>
-      <button class="secondary" onclick="copyOutput()">Copy</button>
-    </div>
+<div class="row">
+  <button class="secondary" onclick="copyOutput()">Copy</button>
+</div>
 
-    <h3>Output:</h3>
-    <pre id="output"></pre>
-    <div class="hint" id="copyStatus"></div>
+<h3>Output:</h3>
+<pre id="output"></pre>
 
-    <h3>Live Preview*:</h3>
-    <div class="preview" id="preview"></div>
-    <body><b>*</b><i>Does not display alpha channel</i></body>
+<h3>Live Preview <b>*</b>:</h3>
+<div id="preview" class="preview"></div>
+<div class="hint"><b>*</b><i> Will not display changes to alpha.</i></div>
 
-  </div>
+</div>
 
-  <script>
-    function normalizeHex(hex) {
-      hex = (hex || '').toLowerCase().replace(/#/g, '').trim();
-      if (hex.length === 6) return hex + 'ff';
-      if (hex.length === 8) return hex;
-      throw new Error('Hex must be 6 or 8 characters');
+<script>
+function normalizeHex(hex) {
+  hex = (hex || '').toLowerCase().replace(/#/g, '').trim();
+  if (hex.length === 6) return hex + 'ff';
+  if (hex.length === 8) return hex;
+  throw new Error('invalid');
+}
+
+function tryNormalize(hex) {
+  hex = (hex || '').toLowerCase().replace(/#/g, '').trim();
+
+  if (hex.length === 6) return hex + 'ff';
+  if (hex.length === 8) return hex;
+
+  return null;
+}
+
+function hexToRgba(hex) {
+  return hex.match(/.{2}/g).map(x => parseInt(x,16));
+}
+
+function rgbaToHex(rgba) {
+  return rgba.map(v => v.toString(16).padStart(2,'0')).join('');
+}
+
+function hexToPicker(hex) {
+  const n = tryNormalize(hex);
+  return n ? '#' + n.substring(0,6) : null;
+}
+
+function syncTextToPicker(textId, pickerId) {
+  const val = document.getElementById(textId).value;
+  const p = hexToPicker(val);
+  if (p) document.getElementById(pickerId).value = p;
+}
+
+function syncPickerToText(pickerId, textId) {
+  const val = document.getElementById(pickerId).value;
+  document.getElementById(textId).value = val.replace('#','') + 'ff';
+}
+
+function updateFooterState() {
+  const mode = document.getElementById('footerMode').value;
+  document.getElementById('footerCustom').style.display =
+    (mode === 'custom') ? 'grid' : 'none';
+}
+
+syncTextToPicker('footerValue', 'footerPicker');
+
+document.getElementById('footerMode').addEventListener('input', updateFooterState);
+updateFooterState();
+
+document.getElementById('footerValue').addEventListener('input', () => {
+  syncTextToPicker('footerValue', 'footerPicker');
+  generate();
+});
+
+document.getElementById('footerPicker').addEventListener('input', () => {
+  syncPickerToText('footerPicker', 'footerValue');
+  generate();
+});
+
+function generate() {
+  try {
+    const pattern = document.getElementById('pattern').value;
+    const text = document.getElementById('text').value;
+
+    let errors = [];
+
+    let col1 = tryNormalize(document.getElementById('col1').value);
+    let col2 = tryNormalize(document.getElementById('col2').value);
+
+    // ✅ Only validate what's needed
+    if (pattern === 'primary' && !col1) errors.push('col1');
+    if (pattern === 'secondary' && !col2) errors.push('col2');
+    if (!['primary','secondary'].includes(pattern)) {
+      if (!col1) errors.push('col1');
+      if (!col2) errors.push('col2');
     }
 
-    function hexToRgba(hex) {
-      let arr = [];
-      for (let i = 0; i < 8; i += 2) {
-        arr.push(parseInt(hex.substring(i, i + 2), 16));
+    let footerMode = document.getElementById('footerMode').value;
+    let footer = null;
+
+    if (footerMode === 'custom') {
+      footer = tryNormalize(document.getElementById('footerValue').value);
+      if (!footer) errors.push('footer');
+    }
+
+    if (errors.length) {
+      throw new Error("Invalid: " + errors.join(', '));
+    }
+
+    let result = '';
+    let preview = '';
+
+    if (pattern === 'primary' || pattern === 'secondary') {
+      let chosen = (pattern === 'primary') ? col1 : col2;
+      result = `[${chosen}]${text}`;
+      preview = `<span style="color: rgb(${hexToRgba(chosen).slice(0,3)})">${text}</span>`;
+    } else {
+      let start = hexToRgba(col1);
+      let end = hexToRgba(col2);
+
+      let chars = text.replace(/ /g,'').length;
+      let index = 0;
+
+      for (let c of text) {
+        if (c === ' ') { result+=' '; preview+=' '; continue; }
+
+        let base = chars <=1 ? 0 : index/(chars-1);
+
+        let t =
+          pattern==='forward'?base:
+          pattern==='reverse'?1-base:
+          pattern==='mirror'?(base<=0.5?base*2:(1-base)*2):
+          (1-(base<=0.5?base*2:(1-base)*2));
+
+        let rgba = start.map((v,i)=>Math.round(v+(end[i]-v)*t));
+        let hex = rgbaToHex(rgba);
+
+        result += `[${hex}]${c}`;
+        preview += `<span style="color: rgb(${rgba.slice(0,3)})">${c}</span>`;
+        index++;
       }
-      return arr;
     }
 
-    function rgbaToHex(rgba) {
-      return rgba.map(v => v.toString(16).padStart(2, '0')).join('');
-    }
+    if (footerMode === 'true') result += '[405572ff]';
+    if (footerMode === 'custom') result += `[${footer}]`;
 
-    function pickerToHexWithAlpha(colorHex, alphaHex = 'ff') {
-      return colorHex.replace('#', '') + alphaHex;
-    }
+    document.getElementById('output').textContent = result;
+    document.getElementById('preview').innerHTML = preview;
 
-    function updatePickerState() {
-      const enabled = document.getElementById('usePicker').checked;
-      document.getElementById('col1picker').disabled = !enabled;
-      document.getElementById('col2picker').disabled = !enabled;
-    }
+  } catch (err) {
+    document.getElementById('output').textContent = err.message;
+    document.getElementById('preview').innerHTML = '';
+  }
+}
 
-    document.getElementById('usePicker').addEventListener('change', updatePickerState);
+async function copyOutput() {
+  const text = document.getElementById('output').textContent;
+  if (!text) return;
+  await navigator.clipboard.writeText(text);
+}
 
-    function generate() {
-      try {
-        let usePicker = document.getElementById('usePicker').checked;
+// Sync listeners
+['col1','col2','footerValue'].forEach(id=>{
+  document.getElementById(id).addEventListener('input',generate);
+});
 
-        let col1 = usePicker
-          ? pickerToHexWithAlpha(document.getElementById('col1picker').value)
-          : normalizeHex(document.getElementById('col1').value);
+document.getElementById('col1').addEventListener('input',()=>syncTextToPicker('col1','col1picker'));
+document.getElementById('col2').addEventListener('input',()=>syncTextToPicker('col2','col2picker'));
 
-        let col2 = usePicker
-          ? pickerToHexWithAlpha(document.getElementById('col2picker').value)
-          : normalizeHex(document.getElementById('col2').value);
+document.getElementById('col1picker').addEventListener('input',()=>syncPickerToText('col1picker','col1'));
+document.getElementById('col2picker').addEventListener('input',()=>syncPickerToText('col2picker','col2'));
+document.getElementById('footerPicker').addEventListener('input',()=>syncPickerToText('footerPicker','footerValue'));
 
-        let direction = document.getElementById('direction').value;
-        let text = document.getElementById('text').value;
-
-        let start = hexToRgba(col1);
-        let end = hexToRgba(col2);
-
-        let chars = text.split('').filter(c => c !== ' ');
-        let length = chars.length;
-
-        let result = '';
-        let previewHTML = '';
-        let index = 0;
-
-        function getT(i, len) {
-          if (len <= 1) return 0;
-          let base = i / (len - 1);
-
-          if (direction === 'forward') return base;
-          if (direction === 'reverse') return 1 - base;
-          if (direction === 'mirror') {
-            if (base <= 0.5) return base * 2;
-            return (1 - base) * 2;
-          }
-        }
-
-        for (let char of text) {
-          if (char === ' ') {
-            result += ' ';
-            previewHTML += ' ';
-            continue;
-          }
-
-          let t = getT(index, length);
-
-          let interpolated = start.map((v, j) =>
-            Math.round(v + (end[j] - v) * t)
-          );
-
-          let hex = rgbaToHex(interpolated);
-          result += `[${hex}]${char}`;
-
-          let rgb = interpolated.slice(0, 3);
-          previewHTML += `<span style=\"color: rgb(${rgb.join(',')})\">${char}</span>`;
-
-          index++;
-        }
-
-        let footerMode = document.getElementById('footerMode').value;
-        let footerValue = document.getElementById('footerValue').value;
-
-        if (footerMode === 'true') {
-          result += '[405572ff]';
-        } else if (footerMode === 'custom') {
-          let footerHex = normalizeHex(footerValue);
-          result += `[${footerHex}]`;
-        }
-
-        document.getElementById('output').textContent = result;
-        document.getElementById('preview').innerHTML = previewHTML;
-        document.getElementById('copyStatus').textContent = '';
-
-      } catch (err) {
-        document.getElementById('output').textContent = 'Error: ' + err.message;
-        document.getElementById('preview').innerHTML = '';
-      }
-    }
-
-    async function copyOutput() {
-      const text = document.getElementById('output').textContent;
-      const status = document.getElementById('copyStatus');
-      if (!text) return;
-
-      try {
-        await navigator.clipboard.writeText(text);
-        status.textContent = 'Copied to clipboard!';
-      } catch {
-        status.textContent = 'Copy failed (browser permission issue).';
-      }
-    }
-  </script>
+['text','pattern','footerMode'].forEach(id=>{
+  document.getElementById(id).addEventListener('input',generate);
+});
+</script>
 </body>
 </html>
