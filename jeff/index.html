@@ -9,56 +9,129 @@
 
 <style>
 
-html, body{
-    margin:0;
-    height:100%;
-    background:#E6D79E;
-    display:flex;
-    justify-content:center;
-    align-items:center;
+html, body {
+    margin: 0;
+    height: 100%;
+    background: #E6D79E;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
-#random-image{
-    max-width:95vw;
-    max-height:95vh;
-    object-fit:contain;
-    cursor:pointer;
-    opacity:0;
+#random-image {
+    max-width: 95vw;
+    max-height: 95vh;
+    object-fit: contain;
+    cursor: pointer;
+    opacity: 0;
 }
 
-.fade-in{
-    animation:fadeIn 0.35s forwards;
+.fade-in {
+    animation: fadeIn 0.35s forwards;
 }
 
-.fade-out{
-    animation:fadeOut 0.35s forwards;
+.fade-out {
+    animation: fadeOut 0.35s forwards;
 }
 
-@keyframes fadeIn{
-    from{opacity:0;}
-    to{opacity:1;}
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
-@keyframes fadeOut{
-    from{opacity:1;}
-    to{opacity:0;}
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+    }
 }
 
-#gallery-button{
-    position:fixed;
-    bottom:2vh;
-    left:2vw;
-    font-size:clamp(12px,1.5vw,18px);
-    padding:1vh 2vw;
-    border:none;
-    border-radius:8px;
-    background:rgba(0,0,0,0.7);
-    color:white;
-    cursor:pointer;
+#gallery-button {
+    position: fixed;
+    bottom: 2vh;
+    left: 2vw;
+    font-size: clamp(12px, 1.5vw, 18px);
+    padding: 1vh 2vw;
+    border: none;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    cursor: pointer;
 }
 
-#gallery-button:hover{
-    background:rgba(0,0,0,0.9);
+#gallery-button:hover {
+    background: rgba(0, 0, 0, 0.9);
+}
+
+/*
+ * Animated indicator for previously unseen images.
+ */
+
+#new-indicator {
+    position: fixed;
+    top: 2vh;
+    right: 2vw;
+    z-index: 1000;
+    padding: 10px 18px;
+    border-radius: 999px;
+    background: linear-gradient(
+        135deg,
+        #ffe680,
+        #e6bc45
+    );
+    color: #272112;
+    font-family: Arial, sans-serif;
+    font-size: clamp(14px, 2vw, 20px);
+    font-weight: bold;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+    opacity: 0;
+    pointer-events: none;
+    user-select: none;
+}
+
+#new-indicator::before {
+    content: "✦";
+    margin-right: 7px;
+}
+
+#new-indicator.show {
+    animation: newIndicator 1.8s ease forwards;
+}
+
+@keyframes newIndicator {
+    0% {
+        opacity: 0;
+        transform: translateY(-12px) scale(0.8);
+    }
+
+    15% {
+        opacity: 1;
+        transform: translateY(0) scale(1.08);
+    }
+
+    25% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+
+    75% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateY(-8px) scale(0.95);
+    }
 }
 
 </style>
@@ -66,53 +139,328 @@ html, body{
 
 <body>
 
-<img id="random-image">
+<img id="random-image" alt="Random image">
+
+<div id="new-indicator" aria-hidden="true">
+    NEW!
+</div>
 
 <button id="gallery-button" onclick="location.href='/gallery'">
-Gallery
+    Gallery
 </button>
 
 <script>
 
-async function loadImage(){
+const RECENT_IMAGE_LIMIT = 5;
 
-    const response = await fetch("images.json");
-    const files = await response.json();
+const RECENT_IMAGES_KEY = "recentImages";
+const VIEWED_IMAGES_KEY = "viewedImages";
 
-    const images = files.map(f => "images/" + f);
+/*
+ * Retrieve a saved array from localStorage.
+ */
 
-    const last = sessionStorage.getItem("lastImage");
+function getStoredImages(key) {
+    try {
+        const savedImages = localStorage.getItem(key);
 
-    let options = images.filter(img => img !== last);
+        if (!savedImages) {
+            return [];
+        }
 
-    if(options.length === 0) options = images;
+        const parsedImages = JSON.parse(savedImages);
 
-    const chosen = options[Math.floor(Math.random()*options.length)];
+        if (!Array.isArray(parsedImages)) {
+            return [];
+        }
 
-    sessionStorage.setItem("lastImage", chosen);
+        return parsedImages.filter(
+            image => typeof image === "string"
+        );
 
-    const img = document.getElementById("random-image");
+    } catch (error) {
+        console.warn(
+            `Could not retrieve "${key}" from localStorage:`,
+            error
+        );
 
-    img.classList.remove("fade-in","fade-out");
-
-    img.src = chosen;
-
-    img.onload = () => {
-        img.classList.add("fade-in");
-    };
+        return [];
+    }
 }
-document.getElementById("random-image").onclick = function(){
 
-    this.onclick = null;
+/*
+ * Retrieve the five most recently displayed images.
+ */
 
-    this.classList.remove("fade-in");
-    this.classList.add("fade-out");
+function getRecentImages() {
+    return getStoredImages(RECENT_IMAGES_KEY).slice(
+        -RECENT_IMAGE_LIMIT
+    );
+}
 
-    setTimeout(()=>{
-        location.reload();
-    },350);
+/*
+ * Retrieve every image the user has viewed.
+ */
 
-};
+function getViewedImages() {
+    return getStoredImages(VIEWED_IMAGES_KEY);
+}
+
+/*
+ * Add an image to the five-image recent history.
+ */
+
+function rememberRecentImage(image) {
+    try {
+        let recentImages = getRecentImages();
+
+        /*
+         * If the image is already present, move it to the end
+         * of the list because it is now the most recent image.
+         */
+        recentImages = recentImages.filter(
+            savedImage => savedImage !== image
+        );
+
+        recentImages.push(image);
+
+        recentImages = recentImages.slice(
+            -RECENT_IMAGE_LIMIT
+        );
+
+        localStorage.setItem(
+            RECENT_IMAGES_KEY,
+            JSON.stringify(recentImages)
+        );
+
+    } catch (error) {
+        console.warn(
+            "Could not save the recent image history:",
+            error
+        );
+    }
+}
+
+/*
+ * Add an image to the complete viewing history only if the
+ * user has not already seen it.
+ *
+ * Returns true when the image is new.
+ */
+
+function rememberViewedImage(image) {
+    const viewedImages = getViewedImages();
+
+    if (viewedImages.includes(image)) {
+        return false;
+    }
+
+    viewedImages.push(image);
+
+    try {
+        localStorage.setItem(
+            VIEWED_IMAGES_KEY,
+            JSON.stringify(viewedImages)
+        );
+
+    } catch (error) {
+        console.warn(
+            "Could not save the complete viewing history:",
+            error
+        );
+    }
+
+    return true;
+}
+
+/*
+ * Briefly display the animated NEW! indicator.
+ */
+
+function showNewIndicator() {
+    const indicator = document.getElementById(
+        "new-indicator"
+    );
+
+    indicator.classList.remove("show");
+
+    /*
+     * Restart the animation if it was already running.
+     */
+    void indicator.offsetWidth;
+
+    indicator.classList.add("show");
+}
+
+document.getElementById("new-indicator").addEventListener(
+    "animationend",
+    function () {
+        this.classList.remove("show");
+    }
+);
+
+/*
+ * Load a random image that was not displayed recently.
+ */
+
+async function loadImage() {
+    const img = document.getElementById(
+        "random-image"
+    );
+
+    try {
+        const response = await fetch("images.json");
+
+        if (!response.ok) {
+            throw new Error(
+                `Could not load images.json: ${response.status}`
+            );
+        }
+
+        const files = await response.json();
+
+        if (!Array.isArray(files)) {
+            throw new Error(
+                "images.json must contain an array of filenames."
+            );
+        }
+
+        /*
+         * Convert filenames into image paths and remove duplicates.
+         */
+        const images = [
+            ...new Set(
+                files.map(
+                    file => "images/" + file
+                )
+            )
+        ];
+
+        if (images.length === 0) {
+            throw new Error(
+                "images.json does not contain any images."
+            );
+        }
+
+        let recentImages = getRecentImages().filter(
+            image => images.includes(image)
+        );
+
+        /*
+         * Leave at least one image available, even when the
+         * website contains five or fewer images.
+         */
+        const maximumExclusions = Math.min(
+            RECENT_IMAGE_LIMIT,
+            Math.max(images.length - 1, 0)
+        );
+
+        if (maximumExclusions > 0) {
+            recentImages = recentImages.slice(
+                -maximumExclusions
+            );
+        } else {
+            recentImages = [];
+        }
+
+        const availableImages = images.filter(
+            image => !recentImages.includes(image)
+        );
+
+        const chosenImage = availableImages[
+            Math.floor(
+                Math.random() * availableImages.length
+            )
+        ];
+
+        img.classList.remove(
+            "fade-in",
+            "fade-out"
+        );
+
+        img.onload = () => {
+            rememberRecentImage(chosenImage);
+
+            const isNewImage = rememberViewedImage(
+                chosenImage
+            );
+
+            img.classList.add("fade-in");
+
+            if (isNewImage) {
+                showNewIndicator();
+            }
+        };
+
+        img.onerror = () => {
+            console.error(
+                "The selected image could not be loaded:",
+                chosenImage
+            );
+        };
+
+        img.src = chosenImage;
+
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+/*
+ * Fade out the current image, then reload the page.
+ */
+
+document.getElementById("random-image").addEventListener(
+    "click",
+    function () {
+        this.style.pointerEvents = "none";
+
+        this.classList.remove("fade-in");
+        this.classList.add("fade-out");
+
+        setTimeout(() => {
+            location.reload();
+        }, 350);
+    }
+);
+
+/*
+ * Debugging shortcut: press Delete to clear both the recent
+ * image history and the complete viewing history.
+ */
+
+document.addEventListener("keydown", event => {
+    if (event.key !== "Delete" || event.repeat) {
+        return;
+    }
+
+    const confirmed = window.confirm(
+        "Are you sure you want to clear all saved image history?"
+    );
+
+    if (!confirmed) {
+        return;
+    }
+
+    try {
+        localStorage.removeItem(RECENT_IMAGES_KEY);
+        localStorage.removeItem(VIEWED_IMAGES_KEY);
+
+        window.alert(
+            "All saved image history has been cleared."
+        );
+
+    } catch (error) {
+        console.error(
+            "Could not clear the saved image history:",
+            error
+        );
+
+        window.alert(
+            "The saved image history could not be cleared."
+        );
+    }
+});
 
 loadImage();
 
