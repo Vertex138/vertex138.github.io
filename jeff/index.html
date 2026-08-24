@@ -72,7 +72,7 @@ html, body {
 }
 
 /*
- * Animated indicator for previously unseen images.
+ * Animated indicator for newly discovered images.
  */
 
 #new-indicator {
@@ -80,31 +80,71 @@ html, body {
     top: 2vh;
     right: 2vw;
     z-index: 1000;
+
+    display: grid;
+    grid-template-columns: auto auto;
+    column-gap: 8px;
+    row-gap: 2px;
+    align-items: center;
+
     padding: 10px 18px;
-    border-radius: 999px;
+    border-radius: 18px;
+
     background: linear-gradient(
         135deg,
         #ffe680,
         #e6bc45
     );
+
     color: #272112;
     font-family: Arial, sans-serif;
-    font-size: clamp(14px, 2vw, 20px);
-    font-weight: bold;
-    letter-spacing: 1px;
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+
     opacity: 0;
     pointer-events: none;
     user-select: none;
 }
 
-#new-indicator::before {
-    content: "✦";
-    margin-right: 7px;
+#new-symbol {
+    grid-column: 1;
+    grid-row: 1;
+
+    font-size: clamp(16px, 2vw, 22px);
+    line-height: 1;
+}
+
+#new-label {
+    grid-column: 2;
+    grid-row: 1;
+
+    font-size: clamp(14px, 2vw, 20px);
+    font-weight: bold;
+    letter-spacing: 1px;
+    line-height: 1;
+}
+
+#new-counter {
+    grid-column: 2;
+    grid-row: 2;
+
+    font-size: clamp(10px, 1.2vw, 13px);
+    font-weight: normal;
+    letter-spacing: 0.3px;
+    text-align: center;
+
+    opacity: 0.8;
+}
+
+#viewed-count {
+    display: inline-block;
 }
 
 #new-indicator.show {
-    animation: newIndicator 1.8s ease forwards;
+    animation: newIndicator 2.1s ease forwards;
+}
+
+#viewed-count.increment {
+    animation: countIncrement 0.5s ease-out forwards;
 }
 
 @keyframes newIndicator {
@@ -123,7 +163,7 @@ html, body {
         transform: translateY(0) scale(1);
     }
 
-    75% {
+    78% {
         opacity: 1;
         transform: translateY(0) scale(1);
     }
@@ -131,6 +171,23 @@ html, body {
     100% {
         opacity: 0;
         transform: translateY(-8px) scale(0.95);
+    }
+}
+
+@keyframes countIncrement {
+    0% {
+        opacity: 0;
+        transform: translateY(7px) scale(0.85);
+    }
+
+    55% {
+        opacity: 1;
+        transform: translateY(-2px) scale(1.18);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
     }
 }
 
@@ -142,7 +199,15 @@ html, body {
 <img id="random-image" alt="Random image">
 
 <div id="new-indicator" aria-hidden="true">
-    NEW!
+    <span id="new-symbol">☆</span>
+
+    <span id="new-label">NEW!</span>
+
+    <span id="new-counter">
+        <span id="viewed-count">0</span>
+        /
+        <span id="image-goal">100</span>
+    </span>
 </div>
 
 <button id="gallery-button" onclick="location.href='/gallery'">
@@ -152,9 +217,21 @@ html, body {
 <script>
 
 const RECENT_IMAGE_LIMIT = 5;
+const TOTAL_IMAGE_GOAL = 100;
 
 const RECENT_IMAGES_KEY = "recentImages";
 const VIEWED_IMAGES_KEY = "viewedImages";
+
+const NEW_IMAGE_SYMBOLS = [
+    "☆",
+    "★",
+    "♡",
+    "♥︎",
+    "◇",
+    "◆"
+];
+
+let countAnimationTimeout = null;
 
 /*
  * Retrieve a saved array from localStorage.
@@ -199,11 +276,15 @@ function getRecentImages() {
 }
 
 /*
- * Retrieve every image the user has viewed.
+ * Retrieve every unique image the user has viewed.
  */
 
 function getViewedImages() {
-    return getStoredImages(VIEWED_IMAGES_KEY);
+    return [
+        ...new Set(
+            getStoredImages(VIEWED_IMAGES_KEY)
+        )
+    ];
 }
 
 /*
@@ -214,10 +295,6 @@ function rememberRecentImage(image) {
     try {
         let recentImages = getRecentImages();
 
-        /*
-         * If the image is already present, move it to the end
-         * of the list because it is now the most recent image.
-         */
         recentImages = recentImages.filter(
             savedImage => savedImage !== image
         );
@@ -242,17 +319,18 @@ function rememberRecentImage(image) {
 }
 
 /*
- * Add an image to the complete viewing history only if the
- * user has not already seen it.
- *
- * Returns true when the image is new.
+ * Add an image to the complete viewing history only if it
+ * has not previously been viewed.
  */
 
 function rememberViewedImage(image) {
     const viewedImages = getViewedImages();
 
     if (viewedImages.includes(image)) {
-        return false;
+        return {
+            isNew: false,
+            viewedCount: viewedImages.length
+        };
     }
 
     viewedImages.push(image);
@@ -270,31 +348,93 @@ function rememberViewedImage(image) {
         );
     }
 
-    return true;
+    return {
+        isNew: true,
+        viewedCount: viewedImages.length
+    };
 }
 
 /*
- * Briefly display the animated NEW! indicator.
+ * Select a random symbol for the NEW! indicator.
  */
 
-function showNewIndicator() {
+function getRandomNewImageSymbol() {
+    return NEW_IMAGE_SYMBOLS[
+        Math.floor(
+            Math.random() * NEW_IMAGE_SYMBOLS.length
+        )
+    ];
+}
+
+/*
+ * Display the indicator and animate the counter increasing
+ * from the previous total to the new total.
+ */
+
+function showNewIndicator(viewedCount) {
     const indicator = document.getElementById(
         "new-indicator"
     );
 
-    indicator.classList.remove("show");
+    const symbol = document.getElementById(
+        "new-symbol"
+    );
+
+    const count = document.getElementById(
+        "viewed-count"
+    );
+
+    const goal = document.getElementById(
+        "image-goal"
+    );
+
+    clearTimeout(countAnimationTimeout);
+
+    symbol.textContent = getRandomNewImageSymbol();
+
+    goal.textContent = TOTAL_IMAGE_GOAL;
 
     /*
-     * Restart the animation if it was already running.
+     * Start by displaying the previous number.
+     */
+    count.textContent = Math.max(
+        viewedCount - 1,
+        0
+    );
+
+    indicator.classList.remove("show");
+    count.classList.remove("increment");
+
+    /*
+     * Restart animations if the indicator was already visible.
      */
     void indicator.offsetWidth;
 
     indicator.classList.add("show");
+
+    /*
+     * Briefly show the previous count, then animate the new count.
+     */
+    countAnimationTimeout = setTimeout(() => {
+        count.textContent = viewedCount;
+        count.classList.add("increment");
+    }, 220);
 }
+
+/*
+ * Remove the popup animation class after its animation finishes.
+ *
+ * Ignore animation events from the counter so the popup does not
+ * disappear when the number animation ends.
+ */
 
 document.getElementById("new-indicator").addEventListener(
     "animationend",
-    function () {
+    function (event) {
+        if (event.target !== this) {
+            return;
+        }
+
         this.classList.remove("show");
     }
 );
@@ -325,9 +465,6 @@ async function loadImage() {
             );
         }
 
-        /*
-         * Convert filenames into image paths and remove duplicates.
-         */
         const images = [
             ...new Set(
                 files.map(
@@ -347,8 +484,8 @@ async function loadImage() {
         );
 
         /*
-         * Leave at least one image available, even when the
-         * website contains five or fewer images.
+         * Leave at least one image available, even when the site
+         * contains five or fewer images.
          */
         const maximumExclusions = Math.min(
             RECENT_IMAGE_LIMIT,
@@ -381,14 +518,16 @@ async function loadImage() {
         img.onload = () => {
             rememberRecentImage(chosenImage);
 
-            const isNewImage = rememberViewedImage(
+            const viewingResult = rememberViewedImage(
                 chosenImage
             );
 
             img.classList.add("fade-in");
 
-            if (isNewImage) {
-                showNewIndicator();
+            if (viewingResult.isNew) {
+                showNewIndicator(
+                    viewingResult.viewedCount
+                );
             }
         };
 
@@ -425,8 +564,7 @@ document.getElementById("random-image").addEventListener(
 );
 
 /*
- * Debugging shortcut: press Delete to clear both the recent
- * image history and the complete viewing history.
+ * Debugging shortcut: press Delete to clear both saved histories.
  */
 
 document.addEventListener("keydown", event => {
