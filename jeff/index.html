@@ -12,10 +12,20 @@
 html, body {
     margin: 0;
     height: 100%;
+}
+
+body {
     background: #E6D79E;
     display: flex;
     justify-content: center;
     align-items: center;
+    overflow: hidden;
+
+    transition: background-color 0.7s ease;
+}
+
+body.no-background-transition {
+    transition: none;
 }
 
 #random-image {
@@ -23,8 +33,52 @@ html, body {
     max-height: 95vh;
     object-fit: contain;
     cursor: pointer;
-    opacity: 0;
+    user-select: none;
 }
+
+#random-image.is-transitioning {
+    pointer-events: none;
+}
+
+/*
+ * Default slide animations.
+ */
+
+.slide-in {
+    animation: slideIn 0.55s
+        cubic-bezier(0.22, 0.8, 0.35, 1)
+        forwards;
+}
+
+.slide-out {
+    animation: slideOut 0.45s
+        cubic-bezier(0.55, 0.05, 0.8, 0.35)
+        forwards;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(110vw);
+    }
+
+    to {
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+    }
+
+    to {
+        transform: translateX(-110vw);
+    }
+}
+
+/*
+ * Reduced-motion image animations.
+ */
 
 .fade-in {
     animation: fadeIn 0.35s forwards;
@@ -58,12 +112,17 @@ html, body {
     position: fixed;
     bottom: 2vh;
     left: 2vw;
+    z-index: 100;
+
     font-size: clamp(12px, 1.5vw, 18px);
     padding: 1vh 2vw;
+
     border: none;
     border-radius: 8px;
+
     background: rgba(0, 0, 0, 0.7);
     color: white;
+
     cursor: pointer;
 }
 
@@ -98,6 +157,7 @@ html, body {
 
     color: #272112;
     font-family: Arial, sans-serif;
+
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
 
     opacity: 0;
@@ -191,15 +251,66 @@ html, body {
     }
 }
 
+/*
+ * Simplify the NEW! indicator animations when reduced
+ * motion is enabled.
+ */
+
+@keyframes newIndicatorReduced {
+    0% {
+        opacity: 0;
+    }
+
+    15% {
+        opacity: 1;
+    }
+
+    78% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes countIncrementReduced {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body {
+        transition: none;
+    }
+
+    #new-indicator.show {
+        animation: newIndicatorReduced 2.1s ease forwards;
+    }
+
+    #viewed-count.increment {
+        animation: countIncrementReduced 0.5s ease forwards;
+    }
+}
+
 </style>
 </head>
 
 <body>
 
-<img id="random-image" alt="Random image">
+<img
+    id="random-image"
+    alt="Randomly selected image"
+    draggable="false"
+>
 
 <div id="new-indicator" aria-hidden="true">
-    <span id="new-symbol">☆</span>
+    <span id="new-symbol">★</span>
 
     <span id="new-label">NEW!</span>
 
@@ -210,7 +321,10 @@ html, body {
     </span>
 </div>
 
-<button id="gallery-button" onclick="location.href='/gallery'">
+<button
+    id="gallery-button"
+    onclick="location.href='/gallery'"
+>
     Gallery
 </button>
 
@@ -219,41 +333,66 @@ html, body {
 const RECENT_IMAGE_LIMIT = 5;
 const TOTAL_IMAGE_GOAL = 100;
 
+const IMAGE_DIRECTORY = "images/";
+
 const RECENT_IMAGES_KEY = "recentImages";
 const VIEWED_IMAGES_KEY = "viewedImages";
 
 const NEW_IMAGE_SYMBOLS = [
-    "☆",
     "★",
-    "♡",
     "♥︎",
-    "◇",
     "◆"
 ];
 
+const reducedMotionQuery = window.matchMedia(
+    "(prefers-reduced-motion: reduce)"
+);
+
+let imageMap = {};
+let availableImageIds = [];
+
+let transitionInProgress = false;
 let countAnimationTimeout = null;
 
 /*
- * Retrieve a saved array from localStorage.
+ * Determine whether reduced motion is currently enabled.
  */
 
-function getStoredImages(key) {
+function reducedMotionEnabled() {
+    return reducedMotionQuery.matches;
+}
+
+/*
+ * Verify that an image ID falls between 1 and 100.
+ */
+
+function isValidImageId(value) {
+    return (
+        Number.isInteger(value) &&
+        value >= 1 &&
+        value <= TOTAL_IMAGE_GOAL
+    );
+}
+
+/*
+ * Retrieve numerical image IDs from localStorage.
+ */
+
+function getStoredImageIds(key) {
     try {
-        const savedImages = localStorage.getItem(key);
+        const savedValues = localStorage.getItem(key);
 
-        if (!savedImages) {
+        if (!savedValues) {
             return [];
         }
 
-        const parsedImages = JSON.parse(savedImages);
+        const parsedValues = JSON.parse(savedValues);
 
-        if (!Array.isArray(parsedImages)) {
+        if (!Array.isArray(parsedValues)) {
             return [];
         }
 
-        return parsedImages.filter(
-            image => typeof image === "string"
-        );
+        return parsedValues.filter(isValidImageId);
 
     } catch (error) {
         console.warn(
@@ -266,96 +405,429 @@ function getStoredImages(key) {
 }
 
 /*
- * Retrieve the five most recently displayed images.
+ * Save numerical image IDs to localStorage.
  */
 
-function getRecentImages() {
-    return getStoredImages(RECENT_IMAGES_KEY).slice(
-        -RECENT_IMAGE_LIMIT
-    );
+function saveStoredImageIds(key, ids) {
+    try {
+        localStorage.setItem(
+            key,
+            JSON.stringify(ids)
+        );
+
+    } catch (error) {
+        console.warn(
+            `Could not save "${key}" to localStorage:`,
+            error
+        );
+    }
 }
 
 /*
- * Retrieve every unique image the user has viewed.
+ * Retrieve the five most recently displayed image IDs.
  */
 
-function getViewedImages() {
+function getRecentImageIds() {
+    return getStoredImageIds(RECENT_IMAGES_KEY)
+        .slice(-RECENT_IMAGE_LIMIT);
+}
+
+/*
+ * Retrieve every unique image ID the visitor has viewed.
+ */
+
+function getViewedImageIds() {
     return [
         ...new Set(
-            getStoredImages(VIEWED_IMAGES_KEY)
+            getStoredImageIds(VIEWED_IMAGES_KEY)
         )
     ];
 }
 
 /*
- * Add an image to the five-image recent history.
+ * Add an image ID to the recent history.
  */
 
-function rememberRecentImage(image) {
-    try {
-        let recentImages = getRecentImages();
+function rememberRecentImage(imageId) {
+    let recentIds = getRecentImageIds();
 
-        recentImages = recentImages.filter(
-            savedImage => savedImage !== image
-        );
+    recentIds = recentIds.filter(
+        savedId => savedId !== imageId
+    );
 
-        recentImages.push(image);
+    recentIds.push(imageId);
 
-        recentImages = recentImages.slice(
-            -RECENT_IMAGE_LIMIT
-        );
-
-        localStorage.setItem(
-            RECENT_IMAGES_KEY,
-            JSON.stringify(recentImages)
-        );
-
-    } catch (error) {
-        console.warn(
-            "Could not save the recent image history:",
-            error
-        );
-    }
+    saveStoredImageIds(
+        RECENT_IMAGES_KEY,
+        recentIds.slice(-RECENT_IMAGE_LIMIT)
+    );
 }
 
 /*
- * Add an image to the complete viewing history only if it
- * has not previously been viewed.
+ * Add an image ID to the complete viewing history only if
+ * it has not previously been viewed.
  */
 
-function rememberViewedImage(image) {
-    const viewedImages = getViewedImages();
+function rememberViewedImage(imageId) {
+    const viewedIds = getViewedImageIds();
 
-    if (viewedImages.includes(image)) {
+    if (viewedIds.includes(imageId)) {
         return {
             isNew: false,
-            viewedCount: viewedImages.length
+            viewedCount: viewedIds.length
         };
     }
 
-    viewedImages.push(image);
+    viewedIds.push(imageId);
 
-    try {
-        localStorage.setItem(
-            VIEWED_IMAGES_KEY,
-            JSON.stringify(viewedImages)
-        );
-
-    } catch (error) {
-        console.warn(
-            "Could not save the complete viewing history:",
-            error
-        );
-    }
+    saveStoredImageIds(
+        VIEWED_IMAGES_KEY,
+        viewedIds
+    );
 
     return {
         isNew: true,
-        viewedCount: viewedImages.length
+        viewedCount: viewedIds.length
     };
 }
 
 /*
- * Select a random symbol for the NEW! indicator.
+ * Retrieve valid numerical IDs from images.json.
+ */
+
+function getAvailableImageIds(imageData) {
+    return Object.entries(imageData)
+        .filter(([rawId, filename]) => {
+            const imageId = Number(rawId);
+
+            return (
+                isValidImageId(imageId) &&
+                typeof filename === "string" &&
+                filename.trim() !== ""
+            );
+        })
+        .map(
+            ([rawId]) => Number(rawId)
+        );
+}
+
+/*
+ * Choose a random image ID while excluding recent IDs.
+ */
+
+function chooseRandomImageId() {
+    let recentIds = getRecentImageIds().filter(
+        imageId => availableImageIds.includes(imageId)
+    );
+
+    /*
+     * Always leave at least one image available.
+     */
+
+    const maximumExclusions = Math.min(
+        RECENT_IMAGE_LIMIT,
+        Math.max(
+            availableImageIds.length - 1,
+            0
+        )
+    );
+
+    if (maximumExclusions > 0) {
+        recentIds = recentIds.slice(
+            -maximumExclusions
+        );
+
+    } else {
+        recentIds = [];
+    }
+
+    const possibleIds = availableImageIds.filter(
+        imageId => !recentIds.includes(imageId)
+    );
+
+    return possibleIds[
+        Math.floor(
+            Math.random() * possibleIds.length
+        )
+    ];
+}
+
+/*
+ * Convert an HSV color into an RGB CSS color.
+ *
+ * Hue:        0 through 359
+ * Saturation: 0 through 1
+ * Value:      0 through 1
+ */
+
+function hsvToRgb(hue, saturation, value) {
+    const chroma = value * saturation;
+
+    const hueSection = hue / 60;
+
+    const intermediate = chroma * (
+        1 - Math.abs(
+            hueSection % 2 - 1
+        )
+    );
+
+    const minimum = value - chroma;
+
+    let red = 0;
+    let green = 0;
+    let blue = 0;
+
+    if (hueSection < 1) {
+        red = chroma;
+        green = intermediate;
+
+    } else if (hueSection < 2) {
+        red = intermediate;
+        green = chroma;
+
+    } else if (hueSection < 3) {
+        green = chroma;
+        blue = intermediate;
+
+    } else if (hueSection < 4) {
+        green = intermediate;
+        blue = chroma;
+
+    } else if (hueSection < 5) {
+        red = intermediate;
+        blue = chroma;
+
+    } else {
+        red = chroma;
+        blue = intermediate;
+    }
+
+    red = Math.round(
+        (red + minimum) * 255
+    );
+
+    green = Math.round(
+        (green + minimum) * 255
+    );
+
+    blue = Math.round(
+        (blue + minimum) * 255
+    );
+
+    return `rgb(${red}, ${green}, ${blue})`;
+}
+
+/*
+ * Set a random background using:
+ *
+ * Hue:        random
+ * Saturation: 30%
+ * Value:      90%
+ */
+
+function setRandomBackground(animate = true) {
+    const body = document.body;
+
+    const randomHue = Math.floor(
+        Math.random() * 360
+    );
+
+    const backgroundColor = hsvToRgb(
+        randomHue,
+        0.30,
+        0.90
+    );
+
+    if (!animate) {
+        body.classList.add(
+            "no-background-transition"
+        );
+    }
+
+    body.style.backgroundColor = backgroundColor;
+
+    if (!animate) {
+        /*
+         * Allow future background changes to transition normally.
+         */
+
+        void body.offsetWidth;
+
+        requestAnimationFrame(() => {
+            body.classList.remove(
+                "no-background-transition"
+            );
+        });
+    }
+}
+
+/*
+ * Remove all image-animation classes.
+ */
+
+function clearImageAnimationClasses(img) {
+    img.classList.remove(
+        "slide-in",
+        "slide-out",
+        "fade-in",
+        "fade-out"
+    );
+}
+
+/*
+ * Play an image animation and wait for it to finish.
+ */
+
+function playImageAnimation(
+    img,
+    animationClass,
+    expectedDuration
+) {
+    clearImageAnimationClasses(img);
+
+    return new Promise(resolve => {
+        let finished = false;
+        let fallbackTimer = null;
+
+        const finish = () => {
+            if (finished) {
+                return;
+            }
+
+            finished = true;
+
+            if (fallbackTimer !== null) {
+                clearTimeout(fallbackTimer);
+            }
+
+            img.removeEventListener(
+                "animationend",
+                handleAnimationEnd
+            );
+
+            resolve();
+        };
+
+        const handleAnimationEnd = event => {
+            if (event.target === img) {
+                finish();
+            }
+        };
+
+        img.addEventListener(
+            "animationend",
+            handleAnimationEnd
+        );
+
+        img.classList.add(animationClass);
+
+        fallbackTimer = setTimeout(
+            finish,
+            expectedDuration + 200
+        );
+    });
+}
+
+/*
+ * Preload one image.
+ *
+ * Only one temporary Image object exists during a transition.
+ */
+
+function preloadImage(source) {
+    return new Promise((resolve, reject) => {
+        const preloader = new Image();
+
+        preloader.onload = () => {
+            resolve(preloader);
+        };
+
+        preloader.onerror = () => {
+            preloader.removeAttribute("src");
+
+            reject(
+                new Error(
+                    `Could not preload image: ${source}`
+                )
+            );
+        };
+
+        preloader.src = source;
+    });
+}
+
+/*
+ * Assign a preloaded image to the visible image element.
+ */
+
+function applyPreloadedImage(img, preloader) {
+    return new Promise((resolve, reject) => {
+        let finished = false;
+
+        const source = preloader.src;
+
+        const finish = callback => {
+            if (finished) {
+                return;
+            }
+
+            finished = true;
+
+            img.onload = null;
+            img.onerror = null;
+
+            callback();
+        };
+
+        img.onload = () => {
+            finish(resolve);
+        };
+
+        img.onerror = () => {
+            finish(() => {
+                reject(
+                    new Error(
+                        `Could not display image: ${source}`
+                    )
+                );
+            });
+        };
+
+        img.src = source;
+
+        /*
+         * Handle images that are immediately available from cache.
+         */
+
+        if (
+            img.complete &&
+            img.naturalWidth > 0
+        ) {
+            queueMicrotask(() => {
+                finish(resolve);
+            });
+        }
+    });
+}
+
+/*
+ * Release the temporary preloader reference.
+ *
+ * The visible image retains its own reference to the current image.
+ */
+
+function releasePreloader(preloader) {
+    if (!preloader) {
+        return;
+    }
+
+    preloader.onload = null;
+    preloader.onerror = null;
+    preloader.removeAttribute("src");
+}
+
+/*
+ * Randomly choose ★, ♥︎, or ◆.
  */
 
 function getRandomNewImageSymbol() {
@@ -367,8 +839,7 @@ function getRandomNewImageSymbol() {
 }
 
 /*
- * Display the indicator and animate the counter increasing
- * from the previous total to the new total.
+ * Show the animated NEW! indicator.
  */
 
 function showNewIndicator(viewedCount) {
@@ -394,9 +865,6 @@ function showNewIndicator(viewedCount) {
 
     goal.textContent = TOTAL_IMAGE_GOAL;
 
-    /*
-     * Start by displaying the previous number.
-     */
     count.textContent = Math.max(
         viewedCount - 1,
         0
@@ -406,27 +874,23 @@ function showNewIndicator(viewedCount) {
     count.classList.remove("increment");
 
     /*
-     * Restart animations if the indicator was already visible.
+     * Force both animations to restart.
      */
+
     void indicator.offsetWidth;
+
+    indicator.setAttribute(
+        "aria-hidden",
+        "false"
+    );
 
     indicator.classList.add("show");
 
-    /*
-     * Briefly show the previous count, then animate the new count.
-     */
     countAnimationTimeout = setTimeout(() => {
         count.textContent = viewedCount;
         count.classList.add("increment");
     }, 220);
 }
-
-/*
- * Remove the popup animation class after its animation finishes.
- *
- * Ignore animation events from the counter so the popup does not
- * disappear when the number animation ends.
- */
 
 document.getElementById("new-indicator").addEventListener(
     "animationend",
@@ -436,17 +900,192 @@ document.getElementById("new-indicator").addEventListener(
         }
 
         this.classList.remove("show");
+
+        this.setAttribute(
+            "aria-hidden",
+            "true"
+        );
     }
 );
 
 /*
- * Load a random image that was not displayed recently.
+ * Record a successfully displayed image.
  */
 
-async function loadImage() {
+function recordDisplayedImage(imageId) {
+    rememberRecentImage(imageId);
+
+    const viewingResult = rememberViewedImage(
+        imageId
+    );
+
+    if (viewingResult.isNew) {
+        showNewIndicator(
+            viewingResult.viewedCount
+        );
+    }
+}
+
+/*
+ * Display the first image when the page opens.
+ */
+
+async function displayInitialImage() {
     const img = document.getElementById(
         "random-image"
     );
+
+    const imageId = chooseRandomImageId();
+    const filename = imageMap[imageId];
+    const source = IMAGE_DIRECTORY + filename;
+
+    let preloader = null;
+
+    transitionInProgress = true;
+
+    img.classList.add("is-transitioning");
+
+    try {
+        preloader = await preloadImage(source);
+
+        await applyPreloadedImage(
+            img,
+            preloader
+        );
+
+        recordDisplayedImage(imageId);
+
+        const incomingAnimation = reducedMotionEnabled()
+            ? "fade-in"
+            : "slide-in";
+
+        const incomingDuration = reducedMotionEnabled()
+            ? 350
+            : 550;
+
+        await playImageAnimation(
+            img,
+            incomingAnimation,
+            incomingDuration
+        );
+
+    } finally {
+        releasePreloader(preloader);
+
+        img.classList.remove("is-transitioning");
+
+        transitionInProgress = false;
+    }
+}
+
+/*
+ * Replace the current image without reloading the page.
+ */
+
+async function displayNextImage() {
+    if (transitionInProgress) {
+        return;
+    }
+
+    const img = document.getElementById(
+        "random-image"
+    );
+
+    const imageId = chooseRandomImageId();
+    const filename = imageMap[imageId];
+    const source = IMAGE_DIRECTORY + filename;
+
+    let preloader = null;
+
+    transitionInProgress = true;
+
+    img.classList.add("is-transitioning");
+
+    try {
+        /*
+         * Load the new image before removing the current image.
+         */
+
+        preloader = await preloadImage(source);
+
+        const useReducedMotion = reducedMotionEnabled();
+
+        /*
+         * Reduced-motion mode preserves its original background
+         * color until the entire page is reloaded.
+         */
+
+        if (!useReducedMotion) {
+            setRandomBackground(true);
+        }
+
+        const outgoingAnimation = useReducedMotion
+            ? "fade-out"
+            : "slide-out";
+
+        const outgoingDuration = useReducedMotion
+            ? 350
+            : 450;
+
+        await playImageAnimation(
+            img,
+            outgoingAnimation,
+            outgoingDuration
+        );
+
+        /*
+         * Remove the previous source before assigning the next one.
+         * The same HTML image element is reused.
+         */
+
+        img.removeAttribute("src");
+
+        await applyPreloadedImage(
+            img,
+            preloader
+        );
+
+        recordDisplayedImage(imageId);
+
+        const incomingAnimation = useReducedMotion
+            ? "fade-in"
+            : "slide-in";
+
+        const incomingDuration = useReducedMotion
+            ? 350
+            : 550;
+
+        await playImageAnimation(
+            img,
+            incomingAnimation,
+            incomingDuration
+        );
+
+    } catch (error) {
+        console.error(error);
+
+        clearImageAnimationClasses(img);
+
+    } finally {
+        releasePreloader(preloader);
+
+        img.classList.remove("is-transitioning");
+
+        transitionInProgress = false;
+    }
+}
+
+/*
+ * Load images.json once when the page opens.
+ */
+
+async function initializePage() {
+    /*
+     * The initial random background is assigned on every complete
+     * page load, including in reduced-motion mode.
+     */
+
+    setRandomBackground(false);
 
     try {
         const response = await fetch("images.json");
@@ -457,88 +1096,29 @@ async function loadImage() {
             );
         }
 
-        const files = await response.json();
+        imageMap = await response.json();
 
-        if (!Array.isArray(files)) {
+        if (
+            imageMap === null ||
+            typeof imageMap !== "object" ||
+            Array.isArray(imageMap)
+        ) {
             throw new Error(
-                "images.json must contain an array of filenames."
+                "images.json must map numerical IDs to filenames."
             );
         }
 
-        const images = [
-            ...new Set(
-                files.map(
-                    file => "images/" + file
-                )
-            )
-        ];
+        availableImageIds = getAvailableImageIds(
+            imageMap
+        );
 
-        if (images.length === 0) {
+        if (availableImageIds.length === 0) {
             throw new Error(
-                "images.json does not contain any images."
+                "images.json does not contain any valid image IDs."
             );
         }
 
-        let recentImages = getRecentImages().filter(
-            image => images.includes(image)
-        );
-
-        /*
-         * Leave at least one image available, even when the site
-         * contains five or fewer images.
-         */
-        const maximumExclusions = Math.min(
-            RECENT_IMAGE_LIMIT,
-            Math.max(images.length - 1, 0)
-        );
-
-        if (maximumExclusions > 0) {
-            recentImages = recentImages.slice(
-                -maximumExclusions
-            );
-        } else {
-            recentImages = [];
-        }
-
-        const availableImages = images.filter(
-            image => !recentImages.includes(image)
-        );
-
-        const chosenImage = availableImages[
-            Math.floor(
-                Math.random() * availableImages.length
-            )
-        ];
-
-        img.classList.remove(
-            "fade-in",
-            "fade-out"
-        );
-
-        img.onload = () => {
-            rememberRecentImage(chosenImage);
-
-            const viewingResult = rememberViewedImage(
-                chosenImage
-            );
-
-            img.classList.add("fade-in");
-
-            if (viewingResult.isNew) {
-                showNewIndicator(
-                    viewingResult.viewedCount
-                );
-            }
-        };
-
-        img.onerror = () => {
-            console.error(
-                "The selected image could not be loaded:",
-                chosenImage
-            );
-        };
-
-        img.src = chosenImage;
+        await displayInitialImage();
 
     } catch (error) {
         console.error(error);
@@ -546,29 +1126,23 @@ async function loadImage() {
 }
 
 /*
- * Fade out the current image, then reload the page.
+ * Request another image without reloading the page.
  */
 
 document.getElementById("random-image").addEventListener(
     "click",
-    function () {
-        this.style.pointerEvents = "none";
-
-        this.classList.remove("fade-in");
-        this.classList.add("fade-out");
-
-        setTimeout(() => {
-            location.reload();
-        }, 350);
-    }
+    displayNextImage
 );
 
 /*
- * Debugging shortcut: press Delete to clear both saved histories.
+ * Press Delete to clear both saved image histories.
  */
 
 document.addEventListener("keydown", event => {
-    if (event.key !== "Delete" || event.repeat) {
+    if (
+        event.key !== "Delete" ||
+        event.repeat
+    ) {
         return;
     }
 
@@ -581,8 +1155,13 @@ document.addEventListener("keydown", event => {
     }
 
     try {
-        localStorage.removeItem(RECENT_IMAGES_KEY);
-        localStorage.removeItem(VIEWED_IMAGES_KEY);
+        localStorage.removeItem(
+            RECENT_IMAGES_KEY
+        );
+
+        localStorage.removeItem(
+            VIEWED_IMAGES_KEY
+        );
 
         window.alert(
             "All saved image history has been cleared."
@@ -600,7 +1179,7 @@ document.addEventListener("keydown", event => {
     }
 });
 
-loadImage();
+initializePage();
 
 </script>
 
