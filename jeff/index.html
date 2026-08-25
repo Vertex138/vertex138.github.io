@@ -36,6 +36,11 @@ body.no-background-transition {
     user-select: none;
 }
 
+#random-image:not([src]),
+#random-image[src=""] {
+    visibility: hidden;
+}
+
 #random-image.is-transitioning {
     pointer-events: none;
 }
@@ -1002,22 +1007,20 @@ async function displayNextImage() {
     img.classList.add("is-transitioning");
 
     try {
-        /*
-         * Load the new image before removing the current image.
-         */
-
-        preloader = await preloadImage(source);
-
         const useReducedMotion = reducedMotionEnabled();
 
         /*
-         * Reduced-motion mode preserves its original background
-         * color until the entire page is reloaded.
+         * Begin transitioning the background immediately,
+         * unless reduced motion is enabled.
          */
 
         if (!useReducedMotion) {
             setRandomBackground(true);
         }
+
+        /*
+         * Move or fade the current image off-screen first.
+         */
 
         const outgoingAnimation = useReducedMotion
             ? "fade-out"
@@ -1034,8 +1037,15 @@ async function displayNextImage() {
         );
 
         /*
-         * Remove the previous source before assigning the next one.
-         * The same HTML image element is reused.
+         * Load the next image after the current image
+         * has finished moving off-screen.
+         */
+
+        preloader = await preloadImage(source);
+
+        /*
+         * Replace the previous image once its replacement
+         * has finished loading.
          */
 
         img.removeAttribute("src");
@@ -1046,6 +1056,10 @@ async function displayNextImage() {
         );
 
         recordDisplayedImage(imageId);
+
+        /*
+         * Move or fade the new image onto the screen.
+         */
 
         const incomingAnimation = useReducedMotion
             ? "fade-in"
@@ -1063,6 +1077,11 @@ async function displayNextImage() {
 
     } catch (error) {
         console.error(error);
+
+        /*
+         * If the next image fails to load, removing the
+         * animation class restores the previous image.
+         */
 
         clearImageAnimationClasses(img);
 
