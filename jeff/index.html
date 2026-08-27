@@ -12,6 +12,21 @@
 html, body {
     margin: 0;
     height: 100%;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+/*
+ * Prevent transformed images from expanding the mobile page while
+ * they slide beyond the viewport. Modern browsers can clip that
+ * overflow without creating a horizontal scrolling container.
+ */
+
+@supports (overflow-x: clip) {
+    html, body {
+        overflow-x: clip;
+    }
 }
 
 body {
@@ -19,7 +34,7 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    overflow: hidden;
+    overflow-y: hidden;
 
     transition: background-color 0.7s ease;
 }
@@ -113,10 +128,10 @@ body.no-background-transition {
     }
 }
 
-#gallery-button {
+#gallery-button,
+#clear-all-button {
     position: fixed;
-    bottom: 2vh;
-    left: 2vw;
+    bottom: max(2vh, env(safe-area-inset-bottom, 0px));
     z-index: 100;
 
     font-size: clamp(12px, 1.5vw, 18px);
@@ -129,9 +144,19 @@ body.no-background-transition {
     color: white;
 
     cursor: pointer;
+    touch-action: manipulation;
 }
 
-#gallery-button:hover {
+#gallery-button {
+    left: max(2vw, env(safe-area-inset-left, 0px));
+}
+
+#clear-all-button {
+    right: max(2vw, env(safe-area-inset-right, 0px));
+}
+
+#gallery-button:hover,
+#clear-all-button:hover {
     background: rgba(0, 0, 0, 0.9);
 }
 
@@ -144,6 +169,9 @@ body.no-background-transition {
     top: 2vh;
     right: 2vw;
     z-index: 1000;
+
+    max-width: calc(100vw - 4vw);
+    box-sizing: border-box;
 
     display: grid;
     grid-template-columns: auto auto;
@@ -331,6 +359,13 @@ body.no-background-transition {
     onclick="location.href='/gallery'"
 >
     Gallery
+</button>
+
+<button
+    id="clear-all-button"
+    type="button"
+>
+    CLEAR ALL
 </button>
 
 <script>
@@ -1154,17 +1189,10 @@ document.getElementById("random-image").addEventListener(
 );
 
 /*
- * Press Delete to clear both saved image histories.
+ * Clear both saved image histories after confirmation.
  */
 
-document.addEventListener("keydown", event => {
-    if (
-        event.key !== "Delete" ||
-        event.repeat
-    ) {
-        return;
-    }
-
+function clearAllSavedImageHistory() {
     const confirmed = window.confirm(
         "Are you sure you want to clear all saved image history?"
     );
@@ -1196,7 +1224,31 @@ document.addEventListener("keydown", event => {
             "The saved image history could not be cleared."
         );
     }
+}
+
+/*
+ * Press Delete to clear both saved image histories on desktop.
+ */
+
+document.addEventListener("keydown", event => {
+    if (
+        event.key !== "Delete" ||
+        event.repeat
+    ) {
+        return;
+    }
+
+    clearAllSavedImageHistory();
 });
+
+/*
+ * Provide the same clearing control on mobile and touch devices.
+ */
+
+document.getElementById("clear-all-button").addEventListener(
+    "click",
+    clearAllSavedImageHistory
+);
 
 initializePage();
 
