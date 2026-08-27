@@ -36,7 +36,7 @@ body {
     align-items: center;
     overflow-y: hidden;
 
-    transition: background-color 0.7s ease;
+    transition: background-color 1s ease;
 }
 
 body.no-background-transition {
@@ -44,8 +44,8 @@ body.no-background-transition {
 }
 
 #random-image {
-    max-width: 95vw;
-    max-height: 95vh;
+    max-width: 90vw;
+    max-height: 90vh;
     object-fit: contain;
     cursor: pointer;
     user-select: none;
@@ -370,7 +370,7 @@ body.no-background-transition {
 
 <script>
 
-const RECENT_IMAGE_LIMIT = 5;
+const RECENT_IMAGE_LIMIT = 10;
 const TOTAL_IMAGE_GOAL = 150;
 
 const IMAGE_DIRECTORY = "images/";
