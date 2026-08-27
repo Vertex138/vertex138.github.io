@@ -398,20 +398,14 @@ body.no-background-transition {
 const RECENT_IMAGE_LIMIT = 10;
 const TOTAL_IMAGE_GOAL = 150;
 
-const NEW_IMAGE_GUARANTEE_INTERVAL = 10;
-const NEW_IMAGE_GUARANTEE_STEP = 0.02;
+const NEW_IMAGE_GUARANTEE_INTERVAL = 3;
+const NEW_IMAGE_GUARANTEE_STEP = 0.05;
 
 const IMAGE_DIRECTORY = "images/";
 
 const RECENT_IMAGES_KEY = "recentImages";
 const VIEWED_IMAGES_KEY = "viewedImages";
 const NO_NEW_STREAK_KEY = "noNewImageStreak";
-
-const NEW_IMAGE_SYMBOLS = [
-    "★",
-    "♥︎",
-    "◆"
-];
 
 const reducedMotionQuery = window.matchMedia(
     "(prefers-reduced-motion: reduce)"
@@ -687,9 +681,9 @@ function getUnseenImageIds() {
 /*
  * Calculate the chance of guaranteeing a new image.
  *
- * 10 images without a NEW image = 2%
- * 20 images without a NEW image = 4%
- * 30 images without a NEW image = 6%
+ * 3 images without a NEW image = 5%
+ * 6 images without a NEW image = 10%
+ * 9 images without a NEW image = 15%
  */
 
 function getNewImageGuaranteeChance() {
@@ -710,7 +704,7 @@ function getNewImageGuaranteeChance() {
  * already been discovered.
  */
 
-function chooseNextImageId(forceNew = false) {
+function chooseNextImageSelection(forceNew = false) {
     const unseenIds = getUnseenImageIds();
 
     if (unseenIds.length > 0) {
@@ -720,15 +714,21 @@ function chooseNextImageId(forceNew = false) {
             forceNew ||
             Math.random() < guaranteeChance
         ) {
-            return unseenIds[
-                Math.floor(
-                    Math.random() * unseenIds.length
-                )
-            ];
+            return {
+                imageId: unseenIds[
+                    Math.floor(
+                        Math.random() * unseenIds.length
+                    )
+                ],
+                wasGuaranteed: true
+            };
         }
     }
 
-    return chooseRandomImageId();
+    return {
+        imageId: chooseRandomImageId(),
+        wasGuaranteed: false
+    };
 }
 
 /*
@@ -1030,22 +1030,13 @@ function releasePreloader(preloader) {
 }
 
 /*
- * Randomly choose ★, ♥︎, or ◆.
- */
-
-function getRandomNewImageSymbol() {
-    return NEW_IMAGE_SYMBOLS[
-        Math.floor(
-            Math.random() * NEW_IMAGE_SYMBOLS.length
-        )
-    ];
-}
-
-/*
  * Show the animated NEW! indicator.
  */
 
-function showNewIndicator(viewedCount) {
+function showNewIndicator(
+    viewedCount,
+    wasGuaranteed = false
+) {
     const indicator = document.getElementById(
         "new-indicator"
     );
@@ -1064,7 +1055,9 @@ function showNewIndicator(viewedCount) {
 
     clearTimeout(countAnimationTimeout);
 
-    symbol.textContent = getRandomNewImageSymbol();
+    symbol.textContent = wasGuaranteed
+        ? "☆"
+        : "★";
 
     goal.textContent = TOTAL_IMAGE_GOAL;
 
@@ -1115,7 +1108,10 @@ document.getElementById("new-indicator").addEventListener(
  * Record a successfully displayed image.
  */
 
-function recordDisplayedImage(imageId) {
+function recordDisplayedImage(
+    imageId,
+    wasGuaranteed = false
+) {
     rememberRecentImage(imageId);
 
     const viewingResult = rememberViewedImage(
@@ -1126,7 +1122,8 @@ function recordDisplayedImage(imageId) {
         saveNoNewImageStreak(0);
 
         showNewIndicator(
-            viewingResult.viewedCount
+            viewingResult.viewedCount,
+            wasGuaranteed
         );
 
     } else {
@@ -1147,7 +1144,8 @@ async function displayInitialImage() {
         "random-image"
     );
 
-    const imageId = chooseNextImageId();
+    const selection = chooseNextImageSelection();
+    const imageId = selection.imageId;
     const filename = imageMap[imageId];
     const source = IMAGE_DIRECTORY + filename;
 
@@ -1165,7 +1163,10 @@ async function displayInitialImage() {
             preloader
         );
 
-        recordDisplayedImage(imageId);
+        recordDisplayedImage(
+            imageId,
+            selection.wasGuaranteed
+        );
 
         const incomingAnimation = reducedMotionEnabled()
             ? "fade-in"
@@ -1203,7 +1204,11 @@ async function displayNextImage(forceNew = false) {
         "random-image"
     );
 
-    const imageId = chooseNextImageId(forceNew);
+    const selection = chooseNextImageSelection(
+        forceNew
+    );
+
+    const imageId = selection.imageId;
     const filename = imageMap[imageId];
     const source = IMAGE_DIRECTORY + filename;
 
@@ -1262,7 +1267,10 @@ async function displayNextImage(forceNew = false) {
             preloader
         );
 
-        recordDisplayedImage(imageId);
+        recordDisplayedImage(
+            imageId,
+            selection.wasGuaranteed
+        );
 
         /*
          * Move or fade the new image onto the screen.
