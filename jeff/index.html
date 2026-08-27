@@ -129,10 +129,8 @@ body.no-background-transition {
 }
 
 #gallery-button,
-#clear-all-button {
-    position: fixed;
-    bottom: max(2vh, env(safe-area-inset-bottom, 0px));
-    z-index: 100;
+#clear-all-button,
+#force-new-button {
 
     font-size: clamp(12px, 1.5vw, 18px);
     padding: 1vh 2vw;
@@ -148,16 +146,33 @@ body.no-background-transition {
 }
 
 #gallery-button {
+    position: fixed;
+    bottom: max(2vh, env(safe-area-inset-bottom, 0px));
     left: max(2vw, env(safe-area-inset-left, 0px));
+    z-index: 100;
 }
 
-#clear-all-button {
+#image-history-controls {
+    position: fixed;
+    bottom: max(2vh, env(safe-area-inset-bottom, 0px));
     right: max(2vw, env(safe-area-inset-right, 0px));
+    z-index: 100;
+
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
 }
 
 #gallery-button:hover,
-#clear-all-button:hover {
+#clear-all-button:hover,
+#force-new-button:not(:disabled):hover {
     background: rgba(0, 0, 0, 0.9);
+}
+
+#force-new-button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
 }
 
 /*
@@ -350,7 +365,7 @@ body.no-background-transition {
     <span id="new-counter">
         <span id="viewed-count">0</span>
         /
-        <span id="image-goal">100</span>
+        <span id="image-goal">150</span>
     </span>
 </div>
 
@@ -361,22 +376,36 @@ body.no-background-transition {
     Gallery
 </button>
 
-<button
-    id="clear-all-button"
-    type="button"
->
-    CLEAR ALL
-</button>
+<div id="image-history-controls">
+    <button
+        id="force-new-button"
+        type="button"
+        disabled
+    >
+        FORCE NEW
+    </button>
+
+    <button
+        id="clear-all-button"
+        type="button"
+    >
+        CLEAR ALL
+    </button>
+</div>
 
 <script>
 
 const RECENT_IMAGE_LIMIT = 10;
 const TOTAL_IMAGE_GOAL = 150;
 
+const NEW_IMAGE_GUARANTEE_INTERVAL = 10;
+const NEW_IMAGE_GUARANTEE_STEP = 0.02;
+
 const IMAGE_DIRECTORY = "images/";
 
 const RECENT_IMAGES_KEY = "recentImages";
 const VIEWED_IMAGES_KEY = "viewedImages";
+const NO_NEW_STREAK_KEY = "noNewImageStreak";
 
 const NEW_IMAGE_SYMBOLS = [
     "★",
@@ -403,7 +432,7 @@ function reducedMotionEnabled() {
 }
 
 /*
- * Verify that an image ID falls between 1 and 100.
+ * Verify that an image ID falls within the complete image collection.
  */
 
 function isValidImageId(value) {
@@ -464,7 +493,56 @@ function saveStoredImageIds(key, ids) {
 }
 
 /*
- * Retrieve the five most recently displayed image IDs.
+ * Retrieve the number of consecutive previously viewed images
+ * displayed since the visitor last discovered a new image.
+ */
+
+function getNoNewImageStreak() {
+    try {
+        const savedValue = Number(
+            localStorage.getItem(NO_NEW_STREAK_KEY)
+        );
+
+        if (
+            !Number.isInteger(savedValue) ||
+            savedValue < 0
+        ) {
+            return 0;
+        }
+
+        return savedValue;
+
+    } catch (error) {
+        console.warn(
+            "Could not retrieve the no-NEW image streak:",
+            error
+        );
+
+        return 0;
+    }
+}
+
+/*
+ * Save the current no-NEW image streak.
+ */
+
+function saveNoNewImageStreak(streak) {
+    try {
+        localStorage.setItem(
+            NO_NEW_STREAK_KEY,
+            String(streak)
+        );
+
+    } catch (error) {
+        console.warn(
+            "Could not save the no-NEW image streak:",
+            error
+        );
+    }
+}
+
+/*
+ * Retrieve the most recently displayed image IDs.
  */
 
 function getRecentImageIds() {
@@ -590,6 +668,91 @@ function chooseRandomImageId() {
             Math.random() * possibleIds.length
         )
     ];
+}
+
+/*
+ * Retrieve every image ID the visitor has not yet viewed.
+ */
+
+function getUnseenImageIds() {
+    const viewedIds = new Set(
+        getViewedImageIds()
+    );
+
+    return availableImageIds.filter(
+        imageId => !viewedIds.has(imageId)
+    );
+}
+
+/*
+ * Calculate the chance of guaranteeing a new image.
+ *
+ * 10 images without a NEW image = 2%
+ * 20 images without a NEW image = 4%
+ * 30 images without a NEW image = 6%
+ */
+
+function getNewImageGuaranteeChance() {
+    const completedIntervals = Math.floor(
+        getNoNewImageStreak() /
+        NEW_IMAGE_GUARANTEE_INTERVAL
+    );
+
+    return Math.min(
+        completedIntervals * NEW_IMAGE_GUARANTEE_STEP,
+        1
+    );
+}
+
+/*
+ * Choose the next image. FORCE NEW bypasses the probability roll,
+ * but neither path can select a new image after all images have
+ * already been discovered.
+ */
+
+function chooseNextImageId(forceNew = false) {
+    const unseenIds = getUnseenImageIds();
+
+    if (unseenIds.length > 0) {
+        const guaranteeChance = getNewImageGuaranteeChance();
+
+        if (
+            forceNew ||
+            Math.random() < guaranteeChance
+        ) {
+            return unseenIds[
+                Math.floor(
+                    Math.random() * unseenIds.length
+                )
+            ];
+        }
+    }
+
+    return chooseRandomImageId();
+}
+
+/*
+ * Disable FORCE NEW when no undiscovered images remain.
+ */
+
+function updateForceNewButtonState() {
+    const button = document.getElementById(
+        "force-new-button"
+    );
+
+    const allImagesViewed = (
+        availableImageIds.length > 0 &&
+        getUnseenImageIds().length === 0
+    );
+
+    button.disabled = (
+        availableImageIds.length === 0 ||
+        allImagesViewed
+    );
+
+    button.title = allImagesViewed
+        ? "All images have already been discovered."
+        : "Display an image you have not viewed before.";
 }
 
 /*
@@ -960,10 +1123,19 @@ function recordDisplayedImage(imageId) {
     );
 
     if (viewingResult.isNew) {
+        saveNoNewImageStreak(0);
+
         showNewIndicator(
             viewingResult.viewedCount
         );
+
+    } else {
+        saveNoNewImageStreak(
+            getNoNewImageStreak() + 1
+        );
     }
+
+    updateForceNewButtonState();
 }
 
 /*
@@ -975,7 +1147,7 @@ async function displayInitialImage() {
         "random-image"
     );
 
-    const imageId = chooseRandomImageId();
+    const imageId = chooseNextImageId();
     const filename = imageMap[imageId];
     const source = IMAGE_DIRECTORY + filename;
 
@@ -1022,7 +1194,7 @@ async function displayInitialImage() {
  * Replace the current image without reloading the page.
  */
 
-async function displayNextImage() {
+async function displayNextImage(forceNew = false) {
     if (transitionInProgress) {
         return;
     }
@@ -1031,7 +1203,7 @@ async function displayNextImage() {
         "random-image"
     );
 
-    const imageId = chooseRandomImageId();
+    const imageId = chooseNextImageId(forceNew);
     const filename = imageMap[imageId];
     const source = IMAGE_DIRECTORY + filename;
 
@@ -1172,6 +1344,8 @@ async function initializePage() {
             );
         }
 
+        updateForceNewButtonState();
+
         await displayInitialImage();
 
     } catch (error) {
@@ -1185,7 +1359,7 @@ async function initializePage() {
 
 document.getElementById("random-image").addEventListener(
     "click",
-    displayNextImage
+    () => displayNextImage(false)
 );
 
 /*
@@ -1209,6 +1383,12 @@ function clearAllSavedImageHistory() {
         localStorage.removeItem(
             VIEWED_IMAGES_KEY
         );
+
+        localStorage.removeItem(
+            NO_NEW_STREAK_KEY
+        );
+
+        updateForceNewButtonState();
 
         window.alert(
             "All saved image history has been cleared."
@@ -1248,6 +1428,15 @@ document.addEventListener("keydown", event => {
 document.getElementById("clear-all-button").addEventListener(
     "click",
     clearAllSavedImageHistory
+);
+
+/*
+ * Guarantee an undiscovered image when at least one remains.
+ */
+
+document.getElementById("force-new-button").addEventListener(
+    "click",
+    () => displayNextImage(true)
 );
 
 initializePage();
