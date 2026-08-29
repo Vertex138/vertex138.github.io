@@ -43,16 +43,48 @@ body.no-background-transition {
     transition: none;
 }
 
+#image-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+
+    max-width: 80vw;
+    max-height: 80vh;
+}
+
 #random-image {
-    max-width: 90vw;
-    max-height: 90vh;
+    display: block;
+    max-width: 100%;
+    max-height: calc(80vh - 34px);
     object-fit: contain;
     cursor: pointer;
     user-select: none;
 }
 
+#image-id-tag {
+    margin-top: 6px;
+    padding: 3px 7px;
+    border-radius: 6px;
+
+    background: rgba(0, 0, 0, 0.65);
+    color: white;
+
+    font-family: Arial, sans-serif;
+    font-size: clamp(11px, 1.2vw, 14px);
+    line-height: 1.2;
+    letter-spacing: 0.5px;
+
+    user-select: none;
+}
+
 #random-image:not([src]),
 #random-image[src=""] {
+    visibility: hidden;
+}
+
+#random-image:not([src]) + #image-id-tag,
+#random-image[src=""] + #image-id-tag,
+#random-image.is-transitioning + #image-id-tag {
     visibility: hidden;
 }
 
@@ -173,6 +205,136 @@ body.no-background-transition {
 #force-new-button:disabled {
     opacity: 0.45;
     cursor: not-allowed;
+}
+
+/*
+ * Persistent completion marker.
+ */
+
+#collection-complete-star {
+    position: fixed;
+    top: max(2vh, env(safe-area-inset-top, 0px));
+    right: max(2vw, env(safe-area-inset-right, 0px));
+    z-index: 900;
+
+    color: #e6bc45;
+    font-family: Arial, sans-serif;
+    font-size: clamp(26px, 4vw, 38px);
+    line-height: 1;
+
+    text-shadow: 0 2px 7px rgba(0, 0, 0, 0.35);
+    pointer-events: none;
+    user-select: none;
+}
+
+/*
+ * Full-screen completion and error states.
+ */
+
+[hidden] {
+    display: none !important;
+}
+
+#collection-complete-overlay,
+#error-overlay {
+    position: fixed;
+    inset: 0;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    box-sizing: border-box;
+    padding: 24px;
+
+    background: rgba(0, 0, 0, 0.62);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+}
+
+#collection-complete-overlay {
+    z-index: 2000;
+}
+
+#error-overlay {
+    z-index: 3000;
+}
+
+#collection-complete-card,
+#error-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+#collection-complete-card {
+    width: min(360px, calc(100vw - 48px));
+    box-sizing: border-box;
+    padding: 28px 24px 24px;
+    border-radius: 20px;
+
+    background: linear-gradient(
+        135deg,
+        #ffe680,
+        #e6bc45
+    );
+
+    color: #272112;
+    font-family: Arial, sans-serif;
+    box-shadow: 0 10px 35px rgba(0, 0, 0, 0.35);
+}
+
+#collection-complete-symbol {
+    margin-bottom: 8px;
+    font-size: 48px;
+    line-height: 1;
+}
+
+#collection-complete-title {
+    margin: 0 0 20px;
+    font-size: clamp(22px, 6vw, 32px);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+#collection-continue-button,
+#retry-button {
+    padding: 10px 22px;
+    border: none;
+    border-radius: 8px;
+
+    font: inherit;
+    font-weight: bold;
+    letter-spacing: 0.7px;
+
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+#collection-continue-button {
+    background: rgba(39, 33, 18, 0.86);
+    color: white;
+}
+
+#error-content {
+    font-family: Arial, sans-serif;
+    color: white;
+}
+
+#error-message {
+    margin: 0 0 12px;
+    font-size: clamp(13px, 3.5vw, 16px);
+}
+
+#retry-button {
+    background: rgba(0, 0, 0, 0.78);
+    color: white;
+}
+
+#collection-continue-button:hover,
+#retry-button:hover {
+    filter: brightness(1.15);
 }
 
 /*
@@ -351,11 +513,15 @@ body.no-background-transition {
 
 <body>
 
-<img
-    id="random-image"
-    alt="Randomly selected image"
-    draggable="false"
->
+<div id="image-container">
+    <img
+        id="random-image"
+        alt="Randomly selected image"
+        draggable="false"
+    >
+
+    <span id="image-id-tag" aria-live="polite"></span>
+</div>
 
 <div id="new-indicator" aria-hidden="true">
     <span id="new-symbol">★</span>
@@ -367,6 +533,61 @@ body.no-background-transition {
         /
         <span id="image-goal">150</span>
     </span>
+</div>
+
+<div
+    id="collection-complete-star"
+    role="img"
+    aria-label="Collection complete"
+    title="Collection complete"
+    hidden
+>
+    ★
+</div>
+
+<div
+    id="collection-complete-overlay"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="collection-complete-title"
+    hidden
+>
+    <div id="collection-complete-card">
+        <div id="collection-complete-symbol" aria-hidden="true">
+            ★
+        </div>
+
+        <h1 id="collection-complete-title">
+            Collection Complete
+        </h1>
+
+        <button
+            id="collection-continue-button"
+            type="button"
+        >
+            CONTINUE
+        </button>
+    </div>
+</div>
+
+<div
+    id="error-overlay"
+    role="alert"
+    aria-live="assertive"
+    hidden
+>
+    <div id="error-content">
+        <p id="error-message">
+            Oops! Jeff must be feeling shy.
+        </p>
+
+        <button
+            id="retry-button"
+            type="button"
+        >
+            RETRY
+        </button>
+    </div>
 </div>
 
 <button
@@ -406,6 +627,8 @@ const IMAGE_DIRECTORY = "images/";
 const RECENT_IMAGES_KEY = "recentImages";
 const VIEWED_IMAGES_KEY = "viewedImages";
 const NO_NEW_STREAK_KEY = "noNewImageStreak";
+const COLLECTION_COMPLETE_ACKNOWLEDGED_KEY =
+    "collectionCompleteAcknowledged";
 
 const reducedMotionQuery = window.matchMedia(
     "(prefers-reduced-motion: reduce)"
@@ -416,6 +639,7 @@ let availableImageIds = [];
 
 let transitionInProgress = false;
 let countAnimationTimeout = null;
+let pendingRetryAction = null;
 
 /*
  * Determine whether reduced motion is currently enabled.
@@ -753,6 +977,167 @@ function updateForceNewButtonState() {
     button.title = allImagesViewed
         ? "All images have already been discovered."
         : "Display an image you have not viewed before.";
+}
+
+/*
+ * Display the current numerical image ID using three digits.
+ */
+
+function updateDisplayedImageId(imageId) {
+    const tag = document.getElementById(
+        "image-id-tag"
+    );
+
+    tag.textContent = `#${String(imageId).padStart(3, "0")}`;
+}
+
+/*
+ * Determine whether every available image has been discovered.
+ */
+
+function collectionIsComplete() {
+    return (
+        availableImageIds.length > 0 &&
+        getUnseenImageIds().length === 0
+    );
+}
+
+/*
+ * Retrieve whether the completion overlay has been acknowledged.
+ */
+
+function collectionCompletionWasAcknowledged() {
+    try {
+        return localStorage.getItem(
+            COLLECTION_COMPLETE_ACKNOWLEDGED_KEY
+        ) === "true";
+
+    } catch (error) {
+        console.warn(
+            "Could not retrieve the collection-complete state:",
+            error
+        );
+
+        return false;
+    }
+}
+
+/*
+ * Save whether the completion overlay has been acknowledged.
+ */
+
+function saveCollectionCompletionAcknowledged(
+    acknowledged
+) {
+    try {
+        if (acknowledged) {
+            localStorage.setItem(
+                COLLECTION_COMPLETE_ACKNOWLEDGED_KEY,
+                "true"
+            );
+
+        } else {
+            localStorage.removeItem(
+                COLLECTION_COMPLETE_ACKNOWLEDGED_KEY
+            );
+        }
+
+    } catch (error) {
+        console.warn(
+            "Could not save the collection-complete state:",
+            error
+        );
+    }
+}
+
+/*
+ * Synchronize the completion overlay and persistent star with the
+ * visitor's current collection progress.
+ */
+
+function updateCollectionCompleteState() {
+    const overlay = document.getElementById(
+        "collection-complete-overlay"
+    );
+
+    const star = document.getElementById(
+        "collection-complete-star"
+    );
+
+    if (!collectionIsComplete()) {
+        star.hidden = true;
+        overlay.hidden = true;
+
+        saveCollectionCompletionAcknowledged(false);
+        return;
+    }
+
+    star.hidden = false;
+
+    if (!collectionCompletionWasAcknowledged()) {
+        overlay.hidden = false;
+
+        requestAnimationFrame(() => {
+            document.getElementById(
+                "collection-continue-button"
+            ).focus();
+        });
+    }
+}
+
+/*
+ * Dismiss the collection-complete overlay while retaining its star.
+ */
+
+function dismissCollectionCompleteOverlay() {
+    saveCollectionCompletionAcknowledged(true);
+
+    document.getElementById(
+        "collection-complete-overlay"
+    ).hidden = true;
+
+    document.getElementById(
+        "random-image"
+    ).focus();
+}
+
+/*
+ * Display or hide the recoverable error state.
+ */
+
+function showErrorState(retryAction) {
+    pendingRetryAction = retryAction;
+
+    document.getElementById(
+        "error-overlay"
+    ).hidden = false;
+
+    requestAnimationFrame(() => {
+        document.getElementById(
+            "retry-button"
+        ).focus();
+    });
+}
+
+function hideErrorState() {
+    document.getElementById(
+        "error-overlay"
+    ).hidden = true;
+}
+
+/*
+ * Repeat the last operation that failed.
+ */
+
+async function retryLastFailedAction() {
+    const retryAction = pendingRetryAction;
+
+    pendingRetryAction = null;
+    hideErrorState();
+
+    if (retryAction) {
+        await retryAction();
+    }
 }
 
 /*
@@ -1112,6 +1497,7 @@ function recordDisplayedImage(
     imageId,
     wasGuaranteed = false
 ) {
+    updateDisplayedImageId(imageId);
     rememberRecentImage(imageId);
 
     const viewingResult = rememberViewedImage(
@@ -1133,6 +1519,7 @@ function recordDisplayedImage(
     }
 
     updateForceNewButtonState();
+    updateCollectionCompleteState();
 }
 
 /*
@@ -1195,7 +1582,10 @@ async function displayInitialImage() {
  * Replace the current image without reloading the page.
  */
 
-async function displayNextImage(forceNew = false) {
+async function displayNextImage(
+    forceNew = false,
+    retrySelection = null
+) {
     if (transitionInProgress) {
         return;
     }
@@ -1204,9 +1594,8 @@ async function displayNextImage(forceNew = false) {
         "random-image"
     );
 
-    const selection = chooseNextImageSelection(
-        forceNew
-    );
+    const selection = retrySelection ||
+        chooseNextImageSelection(forceNew);
 
     const imageId = selection.imageId;
     const filename = imageMap[imageId];
@@ -1290,6 +1679,8 @@ async function displayNextImage(forceNew = false) {
             incomingDuration
         );
 
+        pendingRetryAction = null;
+
     } catch (error) {
         console.error(error);
 
@@ -1299,6 +1690,13 @@ async function displayNextImage(forceNew = false) {
          */
 
         clearImageAnimationClasses(img);
+
+        showErrorState(
+            () => displayNextImage(
+                forceNew,
+                selection
+            )
+        );
 
     } finally {
         releasePreloader(preloader);
@@ -1356,8 +1754,14 @@ async function initializePage() {
 
         await displayInitialImage();
 
+        pendingRetryAction = null;
+
     } catch (error) {
         console.error(error);
+
+        showErrorState(
+            () => initializePage()
+        );
     }
 }
 
@@ -1396,7 +1800,12 @@ function clearAllSavedImageHistory() {
             NO_NEW_STREAK_KEY
         );
 
+        localStorage.removeItem(
+            COLLECTION_COMPLETE_ACKNOWLEDGED_KEY
+        );
+
         updateForceNewButtonState();
+        updateCollectionCompleteState();
 
         window.alert(
             "All saved image history has been cleared."
@@ -1445,6 +1854,26 @@ document.getElementById("clear-all-button").addEventListener(
 document.getElementById("force-new-button").addEventListener(
     "click",
     () => displayNextImage(true)
+);
+
+/*
+ * Dismiss the completed-collection overlay.
+ */
+
+document.getElementById(
+    "collection-continue-button"
+).addEventListener(
+    "click",
+    dismissCollectionCompleteOverlay
+);
+
+/*
+ * Retry the last failed loading operation.
+ */
+
+document.getElementById("retry-button").addEventListener(
+    "click",
+    retryLastFailedAction
 );
 
 initializePage();
