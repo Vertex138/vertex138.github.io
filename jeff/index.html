@@ -46,32 +46,28 @@ body.no-background-transition {
 #image-container {
     display: flex;
     flex-direction: column;
-    align-items: flex-end;
+    align-items: center;
 
-    max-width: 80vw;
-    max-height: 80vh;
+    max-width: 90vw;
+    max-height: 90vh;
 }
 
 #random-image {
     display: block;
     max-width: 100%;
-    max-height: calc(80vh - 34px);
+    max-height: calc(90vh - 6vh);
     object-fit: contain;
     cursor: pointer;
     user-select: none;
 }
 
 #image-id-tag {
-    margin-top: 6px;
-    padding: 3px 7px;
-    border-radius: 6px;
-
-    background: rgba(0, 0, 0, 0.65);
-    color: white;
+    margin-top: 1vh;
+    color: black;
 
     font-family: Arial, sans-serif;
-    font-size: clamp(11px, 1.2vw, 14px);
-    line-height: 1.2;
+    font-size: 5vh;
+    line-height: 1;
     letter-spacing: 0.5px;
 
     user-select: none;
@@ -83,8 +79,7 @@ body.no-background-transition {
 }
 
 #random-image:not([src]) + #image-id-tag,
-#random-image[src=""] + #image-id-tag,
-#random-image.is-transitioning + #image-id-tag {
+#random-image[src=""] + #image-id-tag {
     visibility: hidden;
 }
 
@@ -217,12 +212,11 @@ body.no-background-transition {
     right: max(2vw, env(safe-area-inset-right, 0px));
     z-index: 900;
 
-    color: #e6bc45;
+    color: black;
     font-family: Arial, sans-serif;
-    font-size: clamp(26px, 4vw, 38px);
+    font-size: 5vh;
     line-height: 1;
 
-    text-shadow: 0 2px 7px rgba(0, 0, 0, 0.35);
     pointer-events: none;
     user-select: none;
 }
@@ -295,7 +289,6 @@ body.no-background-transition {
     margin: 0 0 20px;
     font-size: clamp(22px, 6vw, 32px);
     letter-spacing: 1px;
-    text-transform: uppercase;
 }
 
 #collection-continue-button,
@@ -538,8 +531,8 @@ body.no-background-transition {
 <div
     id="collection-complete-star"
     role="img"
-    aria-label="Collection complete"
-    title="Collection complete"
+    aria-label="You've completed Jeff's gallery"
+    title="You've completed Jeff's gallery"
     hidden
 >
     ★
@@ -558,14 +551,14 @@ body.no-background-transition {
         </div>
 
         <h1 id="collection-complete-title">
-            Collection Complete
+            You've Completed Jeff's Gallery!
         </h1>
 
         <button
             id="collection-continue-button"
             type="button"
         >
-            CONTINUE
+            Meow!
         </button>
     </div>
 </div>
@@ -578,7 +571,7 @@ body.no-background-transition {
 >
     <div id="error-content">
         <p id="error-message">
-            Oops! Jeff must be feeling shy.
+            Oops! Something went wrong. Maybe Jeff is feeling shy today?
         </p>
 
         <button
@@ -1882,3 +1875,5 @@ initializePage();
 
 </body>
 </html>
+Jefferson.html
+HTML
