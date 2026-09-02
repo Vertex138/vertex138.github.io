@@ -67,6 +67,7 @@ body.no-background-transition {
 
     font-family: Arial, sans-serif;
     font-size: 5vh;
+    font-weight: bold;
     line-height: 1;
     letter-spacing: 0.5px;
 
@@ -1246,8 +1247,8 @@ function setRandomBackground(animate = true) {
  * Remove all image-animation classes.
  */
 
-function clearImageAnimationClasses(img) {
-    img.classList.remove(
+function clearImageAnimationClasses(element) {
+    element.classList.remove(
         "slide-in",
         "slide-out",
         "fade-in",
@@ -1260,11 +1261,11 @@ function clearImageAnimationClasses(img) {
  */
 
 function playImageAnimation(
-    img,
+    element,
     animationClass,
     expectedDuration
 ) {
-    clearImageAnimationClasses(img);
+    clearImageAnimationClasses(element);
 
     return new Promise(resolve => {
         let finished = false;
@@ -1281,7 +1282,7 @@ function playImageAnimation(
                 clearTimeout(fallbackTimer);
             }
 
-            img.removeEventListener(
+            element.removeEventListener(
                 "animationend",
                 handleAnimationEnd
             );
@@ -1290,17 +1291,17 @@ function playImageAnimation(
         };
 
         const handleAnimationEnd = event => {
-            if (event.target === img) {
+            if (event.target === element) {
                 finish();
             }
         };
 
-        img.addEventListener(
+        element.addEventListener(
             "animationend",
             handleAnimationEnd
         );
 
-        img.classList.add(animationClass);
+        element.classList.add(animationClass);
 
         fallbackTimer = setTimeout(
             finish,
@@ -1524,6 +1525,10 @@ async function displayInitialImage() {
         "random-image"
     );
 
+    const imageContainer = document.getElementById(
+        "image-container"
+    );
+
     const selection = chooseNextImageSelection();
     const imageId = selection.imageId;
     const filename = imageMap[imageId];
@@ -1557,7 +1562,7 @@ async function displayInitialImage() {
             : 550;
 
         await playImageAnimation(
-            img,
+            imageContainer,
             incomingAnimation,
             incomingDuration
         );
@@ -1585,6 +1590,10 @@ async function displayNextImage(
 
     const img = document.getElementById(
         "random-image"
+    );
+
+    const imageContainer = document.getElementById(
+        "image-container"
     );
 
     const selection = retrySelection ||
@@ -1625,7 +1634,7 @@ async function displayNextImage(
             : 450;
 
         await playImageAnimation(
-            img,
+            imageContainer,
             outgoingAnimation,
             outgoingDuration
         );
@@ -1667,7 +1676,7 @@ async function displayNextImage(
             : 550;
 
         await playImageAnimation(
-            img,
+            imageContainer,
             incomingAnimation,
             incomingDuration
         );
@@ -1682,7 +1691,7 @@ async function displayNextImage(
          * animation class restores the previous image.
          */
 
-        clearImageAnimationClasses(img);
+        clearImageAnimationClasses(imageContainer);
 
         showErrorState(
             () => displayNextImage(
@@ -1875,5 +1884,3 @@ initializePage();
 
 </body>
 </html>
-Jefferson.html
-HTML
