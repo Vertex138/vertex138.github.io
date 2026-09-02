@@ -1,15 +1,4 @@
-@font-face {
-    font-family: "Matcha Mint";
-    src: url("fonts/MatchaMint.woff2") format("woff2");
-    font-weight: normal;
-    font-style: normal;
-    font-display: swap;
-}
-
 :root {
-    --page-font: "Matcha Mint", Arial, sans-serif;
-    --symbol-font: Arial, sans-serif;
-
     /*
      * Mobile space reserved for fixed interface elements. Increase
      * the top value later if another top control needs more room.
@@ -22,17 +11,8 @@
 
     --mobile-bottom-ui-space: calc(
         env(safe-area-inset-bottom, 0px) +
-        clamp(72px, 12vh, 112px)
+        clamp(16px, 3vh, 32px)
     );
-}
-
-/*
- * Reserved for the future Simplify Font setting. Applying this
- * class to <html> switches all ordinary page text back to Arial.
- */
-
-html.simplified-font {
-    --page-font: Arial, sans-serif;
 }
 
 html, body {
@@ -61,15 +41,6 @@ body {
     justify-content: center;
     align-items: center;
     overflow-y: hidden;
-
-    font-family: var(--page-font);
-}
-
-button,
-input,
-textarea,
-select {
-    font-family: var(--page-font);
 }
 
 #image-container {
@@ -232,53 +203,6 @@ select {
     to {
         opacity: 0;
     }
-}
-
-#gallery-button,
-#clear-all-button,
-#force-new-button {
-
-    font-size: clamp(12px, 1.5vw, 18px);
-    padding: 1vh 2vw;
-
-    border: none;
-    border-radius: 8px;
-
-    background: rgba(0, 0, 0, 0.7);
-    color: white;
-
-    cursor: pointer;
-    touch-action: manipulation;
-}
-
-#gallery-button {
-    position: fixed;
-    bottom: max(2vh, env(safe-area-inset-bottom, 0px));
-    left: max(2vw, env(safe-area-inset-left, 0px));
-    z-index: 100;
-}
-
-#image-history-controls {
-    position: fixed;
-    bottom: max(2vh, env(safe-area-inset-bottom, 0px));
-    right: max(2vw, env(safe-area-inset-right, 0px));
-    z-index: 100;
-
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-}
-
-#gallery-button:hover,
-#clear-all-button:hover,
-#force-new-button:not(:disabled):hover {
-    background: rgba(0, 0, 0, 0.9);
-}
-
-#force-new-button:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
 }
 
 /*
@@ -566,18 +490,10 @@ select {
     }
 }
 
-@media (prefers-reduced-motion: reduce) {
-    body {
-        transition: none;
-    }
-
-    #new-indicator.show {
-        animation: newIndicatorReduced 2.1s ease forwards;
-    }
-
-    #viewed-count.increment {
-        animation: countIncrementReduced 0.5s ease forwards;
-    }
+html.reduced-motion #new-indicator.show {
+    animation: newIndicatorReduced 2.1s ease forwards;
 }
 
-
+html.reduced-motion #viewed-count.increment {
+    animation: countIncrementReduced 0.5s ease forwards;
+}
