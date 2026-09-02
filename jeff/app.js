@@ -28,7 +28,44 @@ let pendingRetryAction = null;
  */
 
 function reducedMotionEnabled() {
+    if (
+        window.JeffSite &&
+        typeof window.JeffSite.reducedMotionEnabled === "function"
+    ) {
+        return window.JeffSite.reducedMotionEnabled();
+    }
+
     return reducedMotionQuery.matches;
+}
+
+/*
+ * Retrieve and remove a FORCE NEW request sent from another page.
+ */
+
+function consumeForceNewRequest() {
+    const url = new URL(window.location.href);
+
+    if (url.searchParams.get("forceNew") !== "1") {
+        return false;
+    }
+
+    url.searchParams.delete("forceNew");
+
+    try {
+        window.history.replaceState(
+            null,
+            "",
+            `${url.pathname}${url.search}${url.hash}`
+        );
+
+    } catch (error) {
+        console.warn(
+            "Could not remove the FORCE NEW URL parameter:",
+            error
+        );
+    }
+
+    return true;
 }
 
 /*
@@ -346,10 +383,20 @@ function updateForceNewButtonState() {
         "force-new-button"
     );
 
+    if (!button) {
+        return;
+    }
+
     const allImagesViewed = (
         availableImageIds.length > 0 &&
         getUnseenImageIds().length === 0
     );
+
+    if (window.JeffSite) {
+        window.JeffSite.setForceNewReady(
+            availableImageIds.length > 0
+        );
+    }
 
     button.disabled = (
         availableImageIds.length === 0 ||
@@ -793,6 +840,10 @@ function recordDisplayedImage(
 
     updateForceNewButtonState();
     updateCollectionCompleteState();
+
+    document.dispatchEvent(
+        new CustomEvent("jeff:progress-changed")
+    );
 }
 
 /*
@@ -808,7 +859,9 @@ async function displayInitialImage() {
         "image-container"
     );
 
-    const selection = chooseNextImageSelection();
+    const selection = chooseNextImageSelection(
+        consumeForceNewRequest()
+    );
     const imageId = selection.imageId;
     const filename = imageMap[imageId];
     const source = IMAGE_DIRECTORY + filename;
@@ -984,6 +1037,10 @@ async function displayNextImage(
  */
 
 async function initializePage() {
+    if (window.JeffSite) {
+        window.JeffSite.setForceNewReady(false);
+    }
+
     try {
         const response = await fetch("images.json");
 
@@ -1040,86 +1097,18 @@ document.getElementById("random-image").addEventListener(
 );
 
 /*
- * Clear both saved image histories after confirmation.
+ * Handle the shared menu's page-specific actions.
  */
 
-function clearAllSavedImageHistory() {
-    const confirmed = window.confirm(
-        "Are you sure you want to clear all saved image history?"
-    );
-
-    if (!confirmed) {
-        return;
-    }
-
-    try {
-        localStorage.removeItem(
-            RECENT_IMAGES_KEY
-        );
-
-        localStorage.removeItem(
-            VIEWED_IMAGES_KEY
-        );
-
-        localStorage.removeItem(
-            NO_NEW_STREAK_KEY
-        );
-
-        localStorage.removeItem(
-            COLLECTION_COMPLETE_ACKNOWLEDGED_KEY
-        );
-
-        updateForceNewButtonState();
-        updateCollectionCompleteState();
-
-        window.alert(
-            "All saved image history has been cleared."
-        );
-
-    } catch (error) {
-        console.error(
-            "Could not clear the saved image history:",
-            error
-        );
-
-        window.alert(
-            "The saved image history could not be cleared."
-        );
-    }
-}
-
-/*
- * Press Delete to clear both saved image histories on desktop.
- */
-
-document.addEventListener("keydown", event => {
-    if (
-        event.key !== "Delete" ||
-        event.repeat
-    ) {
-        return;
-    }
-
-    clearAllSavedImageHistory();
+document.addEventListener("jeff:force-new", event => {
+    event.preventDefault();
+    displayNextImage(true);
 });
 
-/*
- * Provide the same clearing control on mobile and touch devices.
- */
-
-document.getElementById("clear-all-button").addEventListener(
-    "click",
-    clearAllSavedImageHistory
-);
-
-/*
- * Guarantee an undiscovered image when at least one remains.
- */
-
-document.getElementById("force-new-button").addEventListener(
-    "click",
-    () => displayNextImage(true)
-);
+document.addEventListener("jeff:history-cleared", () => {
+    updateForceNewButtonState();
+    updateCollectionCompleteState();
+});
 
 /*
  * Dismiss the completed-collection overlay.
