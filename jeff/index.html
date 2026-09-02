@@ -7,7 +7,37 @@
 
 <title>Jefferson</title>
 
+<link
+    rel="preload"
+    href="fonts/MatchaMint.woff2"
+    as="font"
+    type="font/woff2"
+    crossorigin
+>
+
 <style>
+
+@font-face {
+    font-family: "Matcha Mint";
+    src: url("fonts/MatchaMint.woff2") format("woff2");
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+:root {
+    --page-font: "Matcha Mint", Arial, sans-serif;
+    --symbol-font: Arial, sans-serif;
+}
+
+/*
+ * Reserved for the future Simplify Font setting. Applying this
+ * class to <html> switches all ordinary page text back to Arial.
+ */
+
+html.simplified-font {
+    --page-font: Arial, sans-serif;
+}
 
 html, body {
     margin: 0;
@@ -36,7 +66,16 @@ body {
     align-items: center;
     overflow-y: hidden;
 
+    font-family: var(--page-font);
+
     transition: background-color 1s ease;
+}
+
+button,
+input,
+textarea,
+select {
+    font-family: var(--page-font);
 }
 
 body.no-background-transition {
@@ -65,7 +104,7 @@ body.no-background-transition {
     margin-top: 1vh;
     color: black;
 
-    font-family: Arial, sans-serif;
+    font-family: var(--page-font);
     font-size: 5vh;
     font-weight: bold;
     line-height: 1;
@@ -214,7 +253,7 @@ body.no-background-transition {
     z-index: 900;
 
     color: black;
-    font-family: Arial, sans-serif;
+    font-family: var(--symbol-font);
     font-size: 5vh;
     line-height: 1;
 
@@ -276,12 +315,12 @@ body.no-background-transition {
     );
 
     color: #272112;
-    font-family: Arial, sans-serif;
     box-shadow: 0 10px 35px rgba(0, 0, 0, 0.35);
 }
 
 #collection-complete-symbol {
     margin-bottom: 8px;
+    font-family: var(--symbol-font);
     font-size: 48px;
     line-height: 1;
 }
@@ -312,7 +351,6 @@ body.no-background-transition {
 }
 
 #error-content {
-    font-family: Arial, sans-serif;
     color: white;
 }
 
@@ -360,7 +398,6 @@ body.no-background-transition {
     );
 
     color: #272112;
-    font-family: Arial, sans-serif;
 
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
 
@@ -373,6 +410,7 @@ body.no-background-transition {
     grid-column: 1;
     grid-row: 1;
 
+    font-family: var(--symbol-font);
     font-size: clamp(16px, 2vw, 22px);
     line-height: 1;
 }
