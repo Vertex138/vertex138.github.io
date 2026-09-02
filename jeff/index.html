@@ -9,20 +9,6 @@
 >
 
 <title>Jefferson</title>
-<link rel="icon" href="icons/favicon.ico" sizes="any">
-
-<link
-    rel="icon"
-    type="image/png"
-    sizes="32x32"
-    href="icons/favicon-32x32.png"
->
-
-<link
-    rel="apple-touch-icon"
-    sizes="180x180"
-    href="icons/apple-touch-icon.png"
->
 
 <link
     rel="preload"
@@ -32,7 +18,11 @@
     crossorigin
 >
 
+<link rel="stylesheet" href="site-menu.css">
 <link rel="stylesheet" href="styles.css">
+
+<script src="site-menu.js" defer></script>
+<script src="app.js" defer></script>
 </head>
 
 <body>
@@ -113,32 +103,6 @@
         </button>
     </div>
 </div>
-
-<button
-    id="gallery-button"
-    onclick="location.href='/gallery'"
->
-    Gallery
-</button>
-
-<div id="image-history-controls">
-    <button
-        id="force-new-button"
-        type="button"
-        disabled
-    >
-        FORCE NEW
-    </button>
-
-    <button
-        id="clear-all-button"
-        type="button"
-    >
-        CLEAR ALL
-    </button>
-</div>
-
-<script src="app.js"></script>
 
 </body>
 </html>
