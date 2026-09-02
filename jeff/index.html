@@ -3,7 +3,10 @@
 
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+>
 
 <title>Jefferson</title>
 
@@ -28,6 +31,21 @@
 :root {
     --page-font: "Matcha Mint", Arial, sans-serif;
     --symbol-font: Arial, sans-serif;
+
+    /*
+     * Mobile space reserved for fixed interface elements. Increase
+     * the top value later if another top control needs more room.
+     */
+
+    --mobile-top-ui-space: calc(
+        env(safe-area-inset-top, 0px) +
+        clamp(72px, 12vh, 112px)
+    );
+
+    --mobile-bottom-ui-space: calc(
+        env(safe-area-inset-bottom, 0px) +
+        clamp(72px, 12vh, 112px)
+    );
 }
 
 /*
@@ -125,6 +143,55 @@ body.no-background-transition {
 
 #random-image.is-transitioning {
     pointer-events: none;
+}
+
+/*
+ * Keep mobile images inside the area between the fixed top and
+ * bottom controls. Dynamic viewport units account for browser bars
+ * appearing and disappearing while the page is open.
+ */
+
+@media (max-width: 768px),
+       (hover: none) and (pointer: coarse) {
+    body {
+        box-sizing: border-box;
+
+        height: 100vh;
+        height: 100dvh;
+
+        padding-top: var(--mobile-top-ui-space);
+        padding-bottom: var(--mobile-bottom-ui-space);
+    }
+
+    #image-container {
+        max-height: calc(
+            100vh -
+            var(--mobile-top-ui-space) -
+            var(--mobile-bottom-ui-space)
+        );
+
+        max-height: calc(
+            100dvh -
+            var(--mobile-top-ui-space) -
+            var(--mobile-bottom-ui-space)
+        );
+    }
+
+    #random-image {
+        max-height: calc(
+            100vh -
+            var(--mobile-top-ui-space) -
+            var(--mobile-bottom-ui-space) -
+            6vh
+        );
+
+        max-height: calc(
+            100dvh -
+            var(--mobile-top-ui-space) -
+            var(--mobile-bottom-ui-space) -
+            6vh
+        );
+    }
 }
 
 /*
