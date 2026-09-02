@@ -1,0 +1,583 @@
+@font-face {
+    font-family: "Matcha Mint";
+    src: url("fonts/MatchaMint.woff2") format("woff2");
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+:root {
+    --page-font: "Matcha Mint", Arial, sans-serif;
+    --symbol-font: Arial, sans-serif;
+
+    /*
+     * Mobile space reserved for fixed interface elements. Increase
+     * the top value later if another top control needs more room.
+     */
+
+    --mobile-top-ui-space: calc(
+        env(safe-area-inset-top, 0px) +
+        clamp(72px, 12vh, 112px)
+    );
+
+    --mobile-bottom-ui-space: calc(
+        env(safe-area-inset-bottom, 0px) +
+        clamp(72px, 12vh, 112px)
+    );
+}
+
+/*
+ * Reserved for the future Simplify Font setting. Applying this
+ * class to <html> switches all ordinary page text back to Arial.
+ */
+
+html.simplified-font {
+    --page-font: Arial, sans-serif;
+}
+
+html, body {
+    margin: 0;
+    height: 100%;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+/*
+ * Prevent transformed images from expanding the mobile page while
+ * they slide beyond the viewport. Modern browsers can clip that
+ * overflow without creating a horizontal scrolling container.
+ */
+
+@supports (overflow-x: clip) {
+    html, body {
+        overflow-x: clip;
+    }
+}
+
+body {
+    background: #E6D79E;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow-y: hidden;
+
+    font-family: var(--page-font);
+}
+
+button,
+input,
+textarea,
+select {
+    font-family: var(--page-font);
+}
+
+#image-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    max-width: 90vw;
+    max-height: 90vh;
+}
+
+#random-image {
+    display: block;
+    max-width: 100%;
+    max-height: calc(90vh - 6vh);
+    object-fit: contain;
+    cursor: pointer;
+    user-select: none;
+}
+
+#image-id-tag {
+    margin-top: 1vh;
+    color: black;
+
+    font-family: var(--page-font);
+    font-size: 5vh;
+    font-weight: normal;
+    line-height: 1;
+    letter-spacing: 0.5px;
+
+    user-select: none;
+}
+
+#random-image:not([src]),
+#random-image[src=""] {
+    visibility: hidden;
+}
+
+#random-image:not([src]) + #image-id-tag,
+#random-image[src=""] + #image-id-tag {
+    visibility: hidden;
+}
+
+#random-image.is-transitioning {
+    pointer-events: none;
+}
+
+/*
+ * Keep mobile images inside the area between the fixed top and
+ * bottom controls. Dynamic viewport units account for browser bars
+ * appearing and disappearing while the page is open.
+ */
+
+@media (max-width: 768px),
+       (hover: none) and (pointer: coarse) {
+    body {
+        box-sizing: border-box;
+
+        height: 100vh;
+        height: 100dvh;
+
+        padding-top: var(--mobile-top-ui-space);
+        padding-bottom: var(--mobile-bottom-ui-space);
+    }
+
+    #image-container {
+        max-height: calc(
+            100vh -
+            var(--mobile-top-ui-space) -
+            var(--mobile-bottom-ui-space)
+        );
+
+        max-height: calc(
+            100dvh -
+            var(--mobile-top-ui-space) -
+            var(--mobile-bottom-ui-space)
+        );
+    }
+
+    #random-image {
+        max-height: calc(
+            100vh -
+            var(--mobile-top-ui-space) -
+            var(--mobile-bottom-ui-space) -
+            6vh
+        );
+
+        max-height: calc(
+            100dvh -
+            var(--mobile-top-ui-space) -
+            var(--mobile-bottom-ui-space) -
+            6vh
+        );
+    }
+}
+
+/*
+ * Default slide animations.
+ */
+
+.slide-in {
+    animation: slideIn 0.55s
+        cubic-bezier(0.22, 0.8, 0.35, 1)
+        forwards;
+}
+
+.slide-out {
+    animation: slideOut 0.45s
+        cubic-bezier(0.55, 0.05, 0.8, 0.35)
+        forwards;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(110vw);
+    }
+
+    to {
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+    }
+
+    to {
+        transform: translateX(-110vw);
+    }
+}
+
+/*
+ * Reduced-motion image animations.
+ */
+
+.fade-in {
+    animation: fadeIn 0.35s forwards;
+}
+
+.fade-out {
+    animation: fadeOut 0.35s forwards;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+    }
+}
+
+#gallery-button,
+#clear-all-button,
+#force-new-button {
+
+    font-size: clamp(12px, 1.5vw, 18px);
+    padding: 1vh 2vw;
+
+    border: none;
+    border-radius: 8px;
+
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+#gallery-button {
+    position: fixed;
+    bottom: max(2vh, env(safe-area-inset-bottom, 0px));
+    left: max(2vw, env(safe-area-inset-left, 0px));
+    z-index: 100;
+}
+
+#image-history-controls {
+    position: fixed;
+    bottom: max(2vh, env(safe-area-inset-bottom, 0px));
+    right: max(2vw, env(safe-area-inset-right, 0px));
+    z-index: 100;
+
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+}
+
+#gallery-button:hover,
+#clear-all-button:hover,
+#force-new-button:not(:disabled):hover {
+    background: rgba(0, 0, 0, 0.9);
+}
+
+#force-new-button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/*
+ * Persistent completion marker.
+ */
+
+#collection-complete-star {
+    position: fixed;
+    top: max(2vh, env(safe-area-inset-top, 0px));
+    right: max(2vw, env(safe-area-inset-right, 0px));
+    z-index: 900;
+
+    color: black;
+    font-family: var(--symbol-font);
+    font-size: 5vh;
+    line-height: 1;
+
+    pointer-events: none;
+    user-select: none;
+}
+
+/*
+ * Full-screen completion and error states.
+ */
+
+[hidden] {
+    display: none !important;
+}
+
+#collection-complete-overlay,
+#error-overlay {
+    position: fixed;
+    inset: 0;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    box-sizing: border-box;
+    padding: 24px;
+
+    background: rgba(0, 0, 0, 0.62);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+}
+
+#collection-complete-overlay {
+    z-index: 2000;
+}
+
+#error-overlay {
+    z-index: 3000;
+}
+
+#collection-complete-card,
+#error-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+#collection-complete-card {
+    width: min(360px, calc(100vw - 48px));
+    box-sizing: border-box;
+    padding: 28px 24px 24px;
+    border-radius: 20px;
+
+    background: linear-gradient(
+        135deg,
+        #ffe680,
+        #e6bc45
+    );
+
+    color: #272112;
+    box-shadow: 0 10px 35px rgba(0, 0, 0, 0.35);
+}
+
+#collection-complete-symbol {
+    margin-bottom: 8px;
+    font-family: var(--symbol-font);
+    font-size: 48px;
+    line-height: 1;
+}
+
+#collection-complete-title {
+    margin: 0 0 20px;
+    font-size: clamp(22px, 6vw, 32px);
+    font-weight: normal;
+    letter-spacing: 1px;
+}
+
+#collection-continue-button,
+#retry-button {
+    padding: 10px 22px;
+    border: none;
+    border-radius: 8px;
+
+    font: inherit;
+    font-weight: normal;
+    letter-spacing: 0.7px;
+
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+#collection-continue-button {
+    background: rgba(39, 33, 18, 0.86);
+    color: white;
+}
+
+#error-content {
+    color: white;
+}
+
+#error-message {
+    margin: 0 0 12px;
+    font-size: clamp(13px, 3.5vw, 16px);
+}
+
+#retry-button {
+    background: rgba(0, 0, 0, 0.78);
+    color: white;
+}
+
+#collection-continue-button:hover,
+#retry-button:hover {
+    filter: brightness(1.15);
+}
+
+/*
+ * Animated indicator for newly discovered images.
+ */
+
+#new-indicator {
+    position: fixed;
+    top: 2vh;
+    right: 2vw;
+    z-index: 1000;
+
+    max-width: calc(100vw - 4vw);
+    box-sizing: border-box;
+
+    display: grid;
+    grid-template-columns: auto auto;
+    column-gap: 8px;
+    row-gap: 2px;
+    align-items: center;
+
+    padding: 10px 18px;
+    border-radius: 18px;
+
+    background: linear-gradient(
+        135deg,
+        #ffe680,
+        #e6bc45
+    );
+
+    color: #272112;
+
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+
+    opacity: 0;
+    pointer-events: none;
+    user-select: none;
+}
+
+#new-symbol {
+    grid-column: 1;
+    grid-row: 1;
+
+    font-family: var(--symbol-font);
+    font-size: clamp(16px, 2vw, 22px);
+    line-height: 1;
+}
+
+#new-label {
+    grid-column: 2;
+    grid-row: 1;
+
+    font-size: clamp(14px, 2vw, 20px);
+    font-weight: normal;
+    letter-spacing: 1px;
+    line-height: 1;
+}
+
+#new-counter {
+    grid-column: 2;
+    grid-row: 2;
+
+    font-size: clamp(10px, 1.2vw, 13px);
+    font-weight: normal;
+    letter-spacing: 0.3px;
+    text-align: center;
+
+    opacity: 0.8;
+}
+
+#viewed-count {
+    display: inline-block;
+}
+
+#new-indicator.show {
+    animation: newIndicator 2.1s ease forwards;
+}
+
+#viewed-count.increment {
+    animation: countIncrement 0.5s ease-out forwards;
+}
+
+@keyframes newIndicator {
+    0% {
+        opacity: 0;
+        transform: translateY(-12px) scale(0.8);
+    }
+
+    15% {
+        opacity: 1;
+        transform: translateY(0) scale(1.08);
+    }
+
+    25% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+
+    78% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateY(-8px) scale(0.95);
+    }
+}
+
+@keyframes countIncrement {
+    0% {
+        opacity: 0;
+        transform: translateY(7px) scale(0.85);
+    }
+
+    55% {
+        opacity: 1;
+        transform: translateY(-2px) scale(1.18);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/*
+ * Simplify the NEW! indicator animations when reduced
+ * motion is enabled.
+ */
+
+@keyframes newIndicatorReduced {
+    0% {
+        opacity: 0;
+    }
+
+    15% {
+        opacity: 1;
+    }
+
+    78% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes countIncrementReduced {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body {
+        transition: none;
+    }
+
+    #new-indicator.show {
+        animation: newIndicatorReduced 2.1s ease forwards;
+    }
+
+    #viewed-count.increment {
+        animation: countIncrementReduced 0.5s ease forwards;
+    }
+}
+
+
