@@ -11,6 +11,9 @@
     --symbol-font: Arial, sans-serif;
     --menu-icon-font: Tahoma, "Segoe UI Symbol", "Cambria Math", sans-serif;
     --menu-background: rgba(0, 0, 0, 0.7);
+    --menu-edge-top: max(2vh, env(safe-area-inset-top, 0px));
+    --menu-edge-left: max(2vw, env(safe-area-inset-left, 0px));
+    --menu-toggle-size: clamp(44px, 6vh, 58px);
 }
 
 html.simplified-font {
@@ -43,14 +46,14 @@ select {
 
 #site-menu-toggle {
     position: fixed;
-    top: max(2vh, env(safe-area-inset-top, 0px));
-    left: max(2vw, env(safe-area-inset-left, 0px));
+    top: var(--menu-edge-top);
+    left: var(--menu-edge-left);
     z-index: 1400;
 
     display: grid;
     place-items: center;
-    width: clamp(44px, 6vh, 58px);
-    height: clamp(44px, 6vh, 58px);
+    width: var(--menu-toggle-size);
+    height: var(--menu-toggle-size);
     padding: 0;
 
     border: none;
@@ -74,6 +77,60 @@ select {
 #site-menu-toggle-icon {
     display: block;
     transform: translateY(-0.04em);
+}
+
+#site-menu-unlock-notice {
+    position: fixed;
+    top: var(--menu-edge-top);
+    left: calc(
+        var(--menu-edge-left) + var(--menu-toggle-size) + 10px
+    );
+    z-index: 1390;
+
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: var(--menu-toggle-size);
+    max-width: calc(
+        100vw - var(--menu-edge-left) - var(--menu-toggle-size) - 28px
+    );
+    box-sizing: border-box;
+    padding: 8px 12px;
+
+    border-radius: 8px;
+    background: var(--menu-background);
+    color: white;
+
+    font-family: var(--page-font);
+    font-size: clamp(12px, 2vw, 16px);
+    line-height: 1.15;
+    white-space: nowrap;
+
+    pointer-events: none;
+    user-select: none;
+}
+
+#site-menu-unlock-arrow {
+    display: block;
+    flex: 0 0 auto;
+    font-family: var(--menu-icon-font);
+    font-size: 1.35em;
+    line-height: 1;
+}
+
+#site-menu-unlock-arrow.is-announcing {
+    animation: menu-unlock-bounce 0.75s ease-in-out 6;
+}
+
+@keyframes menu-unlock-bounce {
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    50% {
+        transform: translateX(-8px);
+    }
 }
 
 #site-menu-backdrop {
@@ -262,6 +319,10 @@ html.site-menu-open #site-menu-panel {
 
 html.reduced-motion #site-menu-panel {
     transition: none;
+}
+
+html.reduced-motion #site-menu-unlock-arrow.is-announcing {
+    animation: none;
 }
 
 @media (max-width: 700px),
