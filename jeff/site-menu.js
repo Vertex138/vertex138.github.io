@@ -9,7 +9,9 @@
         streak: "noNewImageStreak",
         completion: "collectionCompleteAcknowledged",
         reducedMotion: "reducedMotionPreference",
-        simplifiedFont: "simplifiedFontPreference"
+        simplifiedFont: "simplifiedFontPreference",
+        unlockKnown: "menuUnlockKnownLevel",
+        unlockPending: "menuUnlockPendingLevel"
     };
 
     const MENU_LINKS = [
@@ -20,6 +22,10 @@
         { label: "Help Jeff?", href: "/help", required: 50 },
         { label: "Thank you!", href: "/thanks", required: 150 }
     ];
+
+    const UNLOCK_LEVELS = MENU_LINKS
+        .map(link => link.required)
+        .filter(required => required > 0);
 
     const reducedMotionQuery = window.matchMedia(
         "(prefers-reduced-motion: reduce)"
@@ -58,6 +64,17 @@
             >
                 <span id="site-menu-toggle-icon" aria-hidden="true">≡</span>
             </button>
+
+            <div
+                id="site-menu-unlock-notice"
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+                hidden
+            >
+                <span id="site-menu-unlock-arrow" aria-hidden="true">←</span>
+                <span id="site-menu-unlock-label">New item unlocked!</span>
+            </div>
 
             <div id="site-menu-backdrop" hidden></div>
 
@@ -144,6 +161,15 @@
     const root = document.documentElement;
     const menuToggle = document.getElementById("site-menu-toggle");
     const menuIcon = document.getElementById("site-menu-toggle-icon");
+    const unlockNotice = document.getElementById(
+        "site-menu-unlock-notice"
+    );
+    const unlockArrow = document.getElementById(
+        "site-menu-unlock-arrow"
+    );
+    const unlockLabel = document.getElementById(
+        "site-menu-unlock-label"
+    );
     const menuPanel = document.getElementById("site-menu-panel");
     const menuBackdrop = document.getElementById("site-menu-backdrop");
     const accessibilityButton = document.getElementById(
@@ -206,6 +232,13 @@
         root.classList.toggle("reduced-motion", reducedMotion);
         root.classList.toggle("simplified-font", simplifiedFont);
 
+        if (reducedMotion) {
+            unlockArrow.classList.remove("is-announcing");
+
+        } else {
+            startUnlockAnimation();
+        }
+
         reducedMotionSetting.checked = reducedMotion;
         simplifiedFontSetting.checked = simplifiedFont;
     }
@@ -237,6 +270,130 @@
             );
 
             return 0;
+        }
+    }
+
+    function getStoredUnlockLevel(key) {
+        try {
+            const savedLevel = Number(
+                localStorage.getItem(key)
+            );
+
+            return UNLOCK_LEVELS.includes(savedLevel)
+                ? savedLevel
+                : 0;
+
+        } catch (error) {
+            console.warn(
+                "Could not retrieve the menu unlock state:",
+                error
+            );
+
+            return 0;
+        }
+    }
+
+    function saveStoredUnlockLevel(key, level) {
+        try {
+            localStorage.setItem(
+                key,
+                String(level)
+            );
+
+        } catch (error) {
+            console.warn(
+                "Could not save the menu unlock state:",
+                error
+            );
+        }
+    }
+
+    function clearPendingUnlockNotice() {
+        try {
+            localStorage.removeItem(STORAGE_KEYS.unlockPending);
+
+        } catch (error) {
+            console.warn(
+                "Could not clear the menu unlock notice state:",
+                error
+            );
+        }
+    }
+
+    function startUnlockAnimation() {
+        unlockArrow.classList.remove("is-announcing");
+
+        if (
+            unlockNotice.hidden ||
+            root.classList.contains("reduced-motion")
+        ) {
+            return;
+        }
+
+        /* Restart only the arrow's bounce. */
+        void unlockArrow.offsetWidth;
+        unlockArrow.classList.add("is-announcing");
+    }
+
+    function hideUnlockNotice(clearPending = false) {
+        unlockNotice.hidden = true;
+        unlockArrow.classList.remove("is-announcing");
+
+        if (clearPending) {
+            clearPendingUnlockNotice();
+        }
+    }
+
+    function announceNewUnlock(viewedCount) {
+        const unlockedLevels = UNLOCK_LEVELS.filter(
+            required => viewedCount >= required
+        );
+
+        const highestUnlockedLevel = unlockedLevels[
+            unlockedLevels.length - 1
+        ] || 0;
+
+        const knownLevel = getStoredUnlockLevel(
+            STORAGE_KEYS.unlockKnown
+        );
+
+        let reachedNewLevel = false;
+
+        if (highestUnlockedLevel > knownLevel) {
+            saveStoredUnlockLevel(
+                STORAGE_KEYS.unlockKnown,
+                highestUnlockedLevel
+            );
+
+            saveStoredUnlockLevel(
+                STORAGE_KEYS.unlockPending,
+                highestUnlockedLevel
+            );
+
+            reachedNewLevel = true;
+        }
+
+        const pendingLevel = getStoredUnlockLevel(
+            STORAGE_KEYS.unlockPending
+        );
+
+        if (pendingLevel === 0) {
+            return;
+        }
+
+        const unlockedLink = MENU_LINKS.find(
+            link => link.required === pendingLevel
+        );
+
+        const noticeWasHidden = unlockNotice.hidden;
+
+        unlockLabel.textContent = unlockedLink
+            ? `${unlockedLink.label} unlocked!`
+            : "New item unlocked!";
+        unlockNotice.hidden = false;
+
+        if (reachedNewLevel || noticeWasHidden) {
+            startUnlockAnimation();
         }
     }
 
@@ -280,6 +437,8 @@
         forceNewButton.title = collectionComplete
             ? "All images have already been discovered."
             : "Display an image you have not viewed before.";
+
+        announceNewUnlock(viewedCount);
     }
 
     function setMenuOpen(open, restoreFocus = true) {
@@ -295,6 +454,7 @@
 
         if (open) {
             refreshProgress();
+            hideUnlockNotice(true);
 
             requestAnimationFrame(() => {
                 menuPanel.querySelector(
@@ -366,6 +526,11 @@
             localStorage.removeItem(STORAGE_KEYS.viewed);
             localStorage.removeItem(STORAGE_KEYS.streak);
             localStorage.removeItem(STORAGE_KEYS.completion);
+            localStorage.removeItem(STORAGE_KEYS.unlockKnown);
+            localStorage.removeItem(STORAGE_KEYS.unlockPending);
+            localStorage.removeItem("menuUnlockNoticeLevel");
+
+            hideUnlockNotice();
 
             refreshProgress();
 
@@ -395,6 +560,12 @@
 
     menuBackdrop.addEventListener("click", () => {
         setMenuOpen(false);
+    });
+
+    unlockArrow.addEventListener("animationend", event => {
+        if (event.target === unlockArrow) {
+            unlockArrow.classList.remove("is-announcing");
+        }
     });
 
     menuPanel.addEventListener("click", event => {
