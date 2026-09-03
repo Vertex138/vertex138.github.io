@@ -76,6 +76,7 @@ body {
     font: inherit;
     cursor: pointer;
     touch-action: manipulation;
+    opacity: 0;
 
     content-visibility: auto;
     contain-intrinsic-size: auto 220px;
@@ -133,22 +134,6 @@ body {
     font-weight: normal;
     line-height: 1;
     letter-spacing: 0.5px;
-}
-
-.gallery-thumbnail.reveal-from-below {
-    animation: galleryThumbnailRise 0.42s ease-out both;
-}
-
-@keyframes galleryThumbnailRise {
-    from {
-        opacity: 0;
-        transform: translateY(18px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
 }
 
 .gallery-thumbnail.shake-locked {
@@ -365,10 +350,6 @@ html.gallery-viewer-open {
     to {
         opacity: 0;
     }
-}
-
-html.reduced-motion .gallery-thumbnail.reveal-from-below {
-    animation: none;
 }
 
 html.reduced-motion .gallery-thumbnail.shake-locked {
