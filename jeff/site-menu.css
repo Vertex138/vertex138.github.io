@@ -219,6 +219,8 @@ html.site-menu-open #site-menu-panel {
 .site-menu-item.is-locked {
     opacity: 0.42;
     cursor: not-allowed;
+    user-select: none;
+    -webkit-touch-callout: none;
 }
 
 .site-menu-item.is-locked:hover {
