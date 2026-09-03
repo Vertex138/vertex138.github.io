@@ -200,6 +200,41 @@ function getViewedImageIds() {
 }
 
 /*
+ * Read the Gallery milestone from the shared menu configuration.
+ * The fallback keeps this page usable if the menu script fails to load.
+ */
+
+function getGalleryUnlockRequirement() {
+    const sharedRequirement = window.JeffSite &&
+        typeof window.JeffSite.getUnlockRequirement === "function"
+        ? window.JeffSite.getUnlockRequirement("Gallery")
+        : null;
+
+    return Number.isInteger(sharedRequirement) && sharedRequirement > 0
+        ? sharedRequirement
+        : 10;
+}
+
+/*
+ * Show first-time guidance only while the Gallery remains locked.
+ */
+
+function updateTapGuidance(viewedCount = getViewedImageIds().length) {
+    const galleryLocked = (
+        viewedCount < getGalleryUnlockRequirement()
+    );
+
+    document.documentElement.classList.toggle(
+        "gallery-locked",
+        galleryLocked
+    );
+
+    document.getElementById("tap-guidance").hidden = !galleryLocked;
+
+    return !galleryLocked;
+}
+
+/*
  * Add an image ID to the recent history.
  */
 
@@ -793,6 +828,25 @@ function showNewIndicator(
     }, 220);
 }
 
+/*
+ * Immediately remove a NEW indicator that no longer applies.
+ */
+
+function hideNewIndicator() {
+    const indicator = document.getElementById(
+        "new-indicator"
+    );
+
+    const count = document.getElementById(
+        "viewed-count"
+    );
+
+    clearTimeout(countAnimationTimeout);
+    indicator.classList.remove("show");
+    count.classList.remove("increment");
+    indicator.setAttribute("aria-hidden", "true");
+}
+
 document.getElementById("new-indicator").addEventListener(
     "animationend",
     function (event) {
@@ -824,13 +878,21 @@ function recordDisplayedImage(
         imageId
     );
 
+    hideNewIndicator();
+
+    const galleryUnlocked = updateTapGuidance(
+        viewingResult.viewedCount
+    );
+
     if (viewingResult.isNew) {
         saveNoNewImageStreak(0);
 
-        showNewIndicator(
-            viewingResult.viewedCount,
-            wasGuaranteed
-        );
+        if (galleryUnlocked) {
+            showNewIndicator(
+                viewingResult.viewedCount,
+                wasGuaranteed
+            );
+        }
 
     } else {
         saveNoNewImageStreak(
@@ -1106,6 +1168,8 @@ document.addEventListener("jeff:force-new", event => {
 });
 
 document.addEventListener("jeff:history-cleared", () => {
+    hideNewIndicator();
+    updateTapGuidance(0);
     updateForceNewButtonState();
     updateCollectionCompleteState();
 });
