@@ -692,6 +692,14 @@
             root.classList.contains("reduced-motion")
         ),
 
+        getUnlockRequirement(label) {
+            const link = MENU_LINKS.find(
+                item => item.label === label
+            );
+
+            return link ? link.required : null;
+        },
+
         refreshProgress,
 
         setForceNewReady(ready) {
