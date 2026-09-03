@@ -15,7 +15,7 @@
     };
 
     const MENU_LINKS = [
-        { label: "Meet Jeff", href: "/jeff", required: 0 },
+        { label: "Meet Jeff", href: "/jeff/", required: 0 },
         { label: "FAQ", href: "/jeff/faq", required: 0 },
         { label: "Gallery", href: "/jeff/gallery", required: 10 },
         { label: "Help Jeff?", href: "/jeff/help", required: 50 },
@@ -641,7 +641,7 @@
         );
 
         if (document.dispatchEvent(forceNewEvent)) {
-            const destination = new URL("/", window.location.origin);
+            const destination = new URL("/jeff/", window.location.origin);
             destination.searchParams.set("forceNew", "1");
             window.location.assign(destination);
         }
