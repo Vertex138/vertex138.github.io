@@ -18,8 +18,8 @@
         { label: "Meet Jeff", href: "/jeff/", required: 0 },
         { label: "FAQ", href: "/jeff/faq", required: 0 },
         { label: "Gallery", href: "/jeff/gallery", required: 10 },
-        { label: "Contact Jeff", href: "/jeff/contact", required: 50 },
-        { label: "Help Jeff?", href: "/jeff/help", required: 100 },
+        { label: "Help Jeff?", href: "/jeff/help", required: 50 },
+        { label: "Contact Jeff", href: "/jeff/contact", required: 75 },
         { label: "Thank you!", href: "/jeff/thanks", required: 150 }
     ];
 
@@ -38,7 +38,7 @@
             <li>
                 <a
                     class="site-menu-item"
-                    href="${href}"
+                    data-href="${href}"
                     data-unlock="${required}"
                     data-label="${label}"
                 >
@@ -411,12 +411,14 @@
             link.classList.toggle("is-locked", !unlocked);
 
             if (unlocked) {
+                link.setAttribute("href", link.dataset.href);
                 link.removeAttribute("aria-disabled");
                 link.removeAttribute("tabindex");
                 link.setAttribute("aria-label", label);
                 status.textContent = "";
 
             } else {
+                link.removeAttribute("href");
                 link.setAttribute("aria-disabled", "true");
                 link.setAttribute("tabindex", "-1");
                 link.setAttribute(
