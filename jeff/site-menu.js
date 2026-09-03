@@ -72,7 +72,7 @@
                 aria-atomic="true"
                 hidden
             >
-                <span id="site-menu-unlock-arrow" aria-hidden="true">←</span>
+                <span id="site-menu-unlock-arrow" aria-hidden="true">🡸</span>
                 <span id="site-menu-unlock-label">New item unlocked!</span>
             </div>
 
@@ -388,7 +388,7 @@
         const noticeWasHidden = unlockNotice.hidden;
 
         unlockLabel.textContent = unlockedLink
-            ? `${unlockedLink.label} unlocked!`
+            ? `"${unlockedLink.label}" unlocked!`
             : "New item unlocked!";
         unlockNotice.hidden = false;
 
