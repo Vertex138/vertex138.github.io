@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" style="display: none;">
 
 <head>
 <meta charset="UTF-8">
@@ -7,6 +7,47 @@
     name="viewport"
     content="width=device-width, initial-scale=1.0, viewport-fit=cover"
 >
+
+<script>
+(() => {
+    "use strict";
+
+    const GALLERY_UNLOCK_REQUIREMENT = 10;
+    const TOTAL_IMAGE_GOAL = 150;
+    const VIEWED_IMAGES_KEY = "viewedImages";
+    const ROOT_PAGE = "/jeff/";
+
+    let viewedCount = 0;
+
+    try {
+        const storedIds = JSON.parse(
+            localStorage.getItem(VIEWED_IMAGES_KEY) || "[]"
+        );
+
+        if (Array.isArray(storedIds)) {
+            viewedCount = new Set(
+                storedIds
+                    .map(Number)
+                    .filter(imageId => (
+                        Number.isInteger(imageId) &&
+                        imageId >= 1 &&
+                        imageId <= TOTAL_IMAGE_GOAL
+                    ))
+            ).size;
+        }
+
+    } catch (error) {
+        viewedCount = 0;
+    }
+
+    if (viewedCount < GALLERY_UNLOCK_REQUIREMENT) {
+        window.location.replace(ROOT_PAGE);
+        return;
+    }
+
+    document.documentElement.style.display = "";
+})();
+</script>
 
 <title>Jeff's Gallery</title>
 
