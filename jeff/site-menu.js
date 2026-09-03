@@ -17,9 +17,9 @@
     const MENU_LINKS = [
         { label: "Meet Jeff", href: "/", required: 0 },
         { label: "FAQ", href: "/faq", required: 0 },
-        { label: "Gallery", href: "/gallery", required: 5 },
-        { label: "Contact Jeff", href: "/contact", required: 25 },
+        { label: "Gallery", href: "/gallery", required: 10 },
         { label: "Help Jeff?", href: "/help", required: 50 },
+        { label: "Contact Jeff", href: "/contact", required: 75 },
         { label: "Thank you!", href: "/thanks", required: 150 }
     ];
 
