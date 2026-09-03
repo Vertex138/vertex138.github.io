@@ -33,13 +33,10 @@
     let thumbnailMap = {};
     let imageMap = {};
     let loadObserver = null;
-    let revealObserver = null;
+    let thumbnailOpacityFrame = null;
     let activeThumbnail = null;
     let viewerState = "closed";
     let viewerRequestId = 0;
-
-    let lastScrollPosition = window.scrollY;
-    let scrollDirection = "none";
 
     function isValidImageId(value) {
         return (
@@ -282,13 +279,56 @@
             ) {
                 card.classList.remove("shake-locked");
             }
-
-            if (event.animationName === "galleryThumbnailRise") {
-                card.classList.remove("reveal-from-below");
-            }
         });
 
         return card;
+    }
+
+    function updateThumbnailOpacity(card) {
+        const frame = card.querySelector(
+            ".gallery-thumbnail-frame"
+        );
+
+        const bounds = frame.getBoundingClientRect();
+        const viewportBottom = document.documentElement.clientHeight;
+
+        let opacity = 1;
+
+        if (bounds.top >= viewportBottom) {
+            opacity = 0;
+
+        } else if (
+            bounds.top >= 0 &&
+            bounds.bottom > viewportBottom
+        ) {
+            opacity = (
+                viewportBottom - bounds.top
+            ) / bounds.height;
+        }
+
+        card.style.opacity = String(
+            Math.max(0, Math.min(1, opacity))
+        );
+    }
+
+    function updateNearbyThumbnailOpacities() {
+        thumbnailOpacityFrame = null;
+
+        cardByImageId.forEach(card => {
+            if (card.dataset.nearby === "true") {
+                updateThumbnailOpacity(card);
+            }
+        });
+    }
+
+    function scheduleThumbnailOpacityUpdate() {
+        if (thumbnailOpacityFrame !== null) {
+            return;
+        }
+
+        thumbnailOpacityFrame = requestAnimationFrame(
+            updateNearbyThumbnailOpacities
+        );
     }
 
     function observeThumbnailCards() {
@@ -299,6 +339,8 @@
                 card.dataset.nearby = "true";
                 mountThumbnail(card);
             });
+
+            scheduleThumbnailOpacityUpdate();
 
             return;
         }
@@ -311,9 +353,16 @@
 
                 if (entry.isIntersecting) {
                     mountThumbnail(card);
+                    updateThumbnailOpacity(card);
 
                 } else {
                     unmountThumbnail(card);
+
+                    card.style.opacity =
+                        entry.boundingClientRect.top >=
+                        document.documentElement.clientHeight
+                            ? "0"
+                            : "1";
                 }
             });
         }, {
@@ -321,38 +370,21 @@
             threshold: 0
         });
 
-        revealObserver = new IntersectionObserver(entries => {
-            entries.forEach(entry => {
-                if (
-                    !entry.isIntersecting ||
-                    scrollDirection !== "down" ||
-                    entry.boundingClientRect.top < 0 ||
-                    reducedMotionEnabled()
-                ) {
-                    return;
-                }
-
-                const card = entry.target;
-
-                card.classList.remove("reveal-from-below");
-                void card.offsetWidth;
-                card.classList.add("reveal-from-below");
-            });
-        }, {
-            threshold: 0.15
-        });
-
         cards.forEach(card => {
             loadObserver.observe(card);
-            revealObserver.observe(card);
         });
+
+        scheduleThumbnailOpacityUpdate();
     }
 
     function disconnectThumbnailObservers() {
         loadObserver?.disconnect();
-        revealObserver?.disconnect();
         loadObserver = null;
-        revealObserver = null;
+
+        if (thumbnailOpacityFrame !== null) {
+            cancelAnimationFrame(thumbnailOpacityFrame);
+            thumbnailOpacityFrame = null;
+        }
     }
 
     function renderGallery() {
@@ -634,18 +666,17 @@
         }
     }
 
-    window.addEventListener("scroll", () => {
-        const currentPosition = window.scrollY;
+    window.addEventListener(
+        "scroll",
+        scheduleThumbnailOpacityUpdate,
+        { passive: true }
+    );
 
-        if (currentPosition > lastScrollPosition) {
-            scrollDirection = "down";
-
-        } else if (currentPosition < lastScrollPosition) {
-            scrollDirection = "up";
-        }
-
-        lastScrollPosition = currentPosition;
-    }, { passive: true });
+    window.addEventListener(
+        "resize",
+        scheduleThumbnailOpacityUpdate,
+        { passive: true }
+    );
 
     window.addEventListener("storage", event => {
         if (event.key === VIEWED_IMAGES_KEY) {
