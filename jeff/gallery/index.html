@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="UTF-8">
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+>
+
+<title>Jeff's Gallery</title>
+
+<link rel="icon" href="/jeff/icons/favicon.ico" sizes="any">
+<link
+    rel="icon"
+    type="image/png"
+    sizes="32x32"
+    href="/jeff/icons/favicon-32x32.png"
+>
+<link
+    rel="apple-touch-icon"
+    sizes="180x180"
+    href="/jeff/icons/apple-touch-icon.png"
+>
+
+<link
+    rel="preload"
+    href="/jeff/fonts/MatchaMint.woff2"
+    as="font"
+    type="font/woff2"
+    crossorigin
+>
+
+<link rel="stylesheet" href="/jeff/site-menu.css">
+<link rel="stylesheet" href="/jeff/gallery/gallery.css">
+
+<script src="/jeff/site-menu.js" defer></script>
+<script src="/jeff/gallery/gallery.js" defer></script>
+</head>
+
+<body>
+
+<main id="gallery-page">
+    <header id="gallery-header">
+        <h1>Jeff's Gallery</h1>
+        <p id="gallery-progress" aria-live="polite">
+            Loading gallery…
+        </p>
+    </header>
+
+    <div
+        id="gallery-grid"
+        aria-label="Jeff image collection"
+        aria-busy="true"
+    ></div>
+
+    <section id="gallery-error" role="alert" hidden>
+        <p>Oops! Jeff's gallery could not be loaded.</p>
+        <button id="gallery-retry-button" type="button">
+            TRY AGAIN
+        </button>
+    </section>
+</main>
+
+<div
+    id="gallery-viewer"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Full-size gallery image"
+    hidden
+>
+    <button
+        id="gallery-viewer-close"
+        type="button"
+        aria-label="Close full-size image"
+    >
+        ×
+    </button>
+
+    <p id="gallery-viewer-status" role="status" aria-live="polite">
+        Loading image…
+    </p>
+
+    <figure id="gallery-viewer-figure" hidden>
+        <img
+            id="gallery-full-image"
+            alt=""
+            draggable="false"
+            tabindex="0"
+        >
+        <figcaption id="gallery-full-id"></figcaption>
+    </figure>
+</div>
+
+</body>
+</html>
