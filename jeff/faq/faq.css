@@ -1,0 +1,107 @@
+:root {
+    --faq-background: #E6D79E;
+    --faq-text: #171717;
+    --faq-answer-text: #343434;
+}
+
+html,
+body {
+    margin: 0;
+    min-height: 100%;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+@supports (overflow-x: clip) {
+    html,
+    body {
+        overflow-x: clip;
+    }
+}
+
+body {
+    box-sizing: border-box;
+    min-height: 100vh;
+    min-height: 100dvh;
+    background: var(--faq-background);
+    color: var(--faq-text);
+}
+
+#faq-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    min-height: 100dvh;
+    box-sizing: border-box;
+    padding:
+        calc(
+            max(2vh, env(safe-area-inset-top, 0px)) +
+            clamp(72px, 10vh, 104px)
+        )
+        0
+        max(24px, env(safe-area-inset-bottom, 0px));
+}
+
+#faq-header {
+    width: min(80vw, 100vh);
+    margin-bottom: clamp(34px, 6vh, 64px);
+    text-align: center;
+}
+
+#faq-header h1 {
+    margin: 0;
+    font-size: clamp(34px, 7vw, 64px);
+    font-weight: normal;
+    line-height: 1;
+}
+
+#faq-list {
+    width: min(80vw, 100vh);
+    text-align: left;
+}
+
+.faq-entry {
+    margin: 0;
+}
+
+.faq-entry:not(:last-child) {
+    margin-bottom: clamp(28px, 5vh, 52px);
+    padding-bottom: clamp(28px, 5vh, 52px);
+    border-bottom: 2px solid rgba(23, 23, 23, 0.48);
+}
+
+.faq-question {
+    margin: 0 0 clamp(12px, 2vh, 20px);
+    font-size: clamp(26px, 4vw, 42px);
+    font-weight: normal;
+    line-height: 1.15;
+}
+
+.faq-answer {
+    margin: 0;
+    color: var(--faq-answer-text);
+    font-size: clamp(17px, 2.4vw, 24px);
+    line-height: 1.45;
+}
+
+html.simplified-font .faq-question {
+    font-weight: bold;
+}
+
+html.simplified-font .faq-answer {
+    color: var(--faq-text);
+}
+
+#faq-image {
+    display: block;
+    width: auto;
+    max-width: min(80vw, 100vh);
+    max-height: 60vh;
+    margin-top: auto;
+    padding-top: clamp(48px, 10vh, 110px);
+    object-fit: contain;
+    user-select: none;
+    -webkit-user-drag: none;
+}
