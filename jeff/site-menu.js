@@ -16,10 +16,10 @@
 
     const MENU_LINKS = [
         { label: "Meet Jeff", href: "/jeff/", required: 0 },
-        { label: "FAQ", href: "/jeff/faq", required: 0 },
-        { label: "Gallery", href: "/jeff/gallery", required: 5 },
-        { label: "Help Jeff?", href: "/jeff/help", required: 50 },
-        { label: "Contact Jeff", href: "/jeff/contact", required: 75 },
+        { label: "Jeff Gallery", href: "/jeff/gallery", required: 5 },
+        { label: "Jeff's FAQ", href: "/jeff/faq", required: 25 },
+        { label: "Jeff's Mailbox", href: "/jeff/contact", required: 50 },
+        { label: "Help Jeff?", href: "/jeff/help", required: 75 },
         { label: "Thank you!", href: "/jeff/thanks", required: 150 }
     ];
 
