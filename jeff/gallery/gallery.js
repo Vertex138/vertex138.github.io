@@ -419,7 +419,36 @@
         const viewedIds = new Set(getViewedImageIds());
         const viewedCount = viewedIds.size;
 
-        progress.textContent = `${viewedCount} / ${TOTAL_IMAGE_GOAL} discovered`;
+        const progressText = (
+            `${viewedCount} / ${TOTAL_IMAGE_GOAL} discovered`
+        );
+
+        if (viewedCount === TOTAL_IMAGE_GOAL) {
+            const createStar = () => {
+                const star = document.createElement("span");
+
+                star.className = "gallery-complete-star";
+                star.setAttribute("aria-hidden", "true");
+                star.textContent = "★";
+
+                return star;
+            };
+
+            progress.replaceChildren(
+                createStar(),
+                document.createTextNode(` ${progressText} `),
+                createStar()
+            );
+
+            progress.setAttribute(
+                "aria-label",
+                `${progressText}. Collection complete.`
+            );
+
+        } else {
+            progress.textContent = progressText;
+            progress.removeAttribute("aria-label");
+        }
 
         cardByImageId.forEach((card, imageId) => {
             setCardUnlockState(
