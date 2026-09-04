@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en" style="display: none;">
+
+<head>
+<meta charset="UTF-8">
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+>
+
+<script>
+(() => {
+    "use strict";
+
+    const FAQ_UNLOCK_REQUIREMENT = 25;
+    const TOTAL_IMAGE_GOAL = 150;
+    const VIEWED_IMAGES_KEY = "viewedImages";
+    const ROOT_PAGE = "/jeff/";
+
+    let viewedCount = 0;
+
+    try {
+        const storedIds = JSON.parse(
+            localStorage.getItem(VIEWED_IMAGES_KEY) || "[]"
+        );
+
+        if (Array.isArray(storedIds)) {
+            viewedCount = new Set(
+                storedIds
+                    .map(Number)
+                    .filter(imageId => (
+                        Number.isInteger(imageId) &&
+                        imageId >= 1 &&
+                        imageId <= TOTAL_IMAGE_GOAL
+                    ))
+            ).size;
+        }
+
+    } catch (error) {
+        viewedCount = 0;
+    }
+
+    if (viewedCount < FAQ_UNLOCK_REQUIREMENT) {
+        window.location.replace(ROOT_PAGE);
+        return;
+    }
+
+    document.documentElement.style.display = "";
+})();
+</script>
+
+<title>Jeff's F.A.Q.</title>
+
+<link rel="icon" href="/jeff/icons/favicon.ico" sizes="any">
+<link
+    rel="icon"
+    type="image/png"
+    sizes="32x32"
+    href="/jeff/icons/favicon-32x32.png"
+>
+<link
+    rel="apple-touch-icon"
+    sizes="180x180"
+    href="/jeff/icons/apple-touch-icon.png"
+>
+
+<link
+    rel="preload"
+    href="/jeff/fonts/MatchaMint.woff2"
+    as="font"
+    type="font/woff2"
+    crossorigin
+>
+
+<link rel="stylesheet" href="/jeff/site-menu.css">
+<link rel="stylesheet" href="/jeff/faq/faq.css">
+
+<script src="/jeff/site-menu.js" defer></script>
+</head>
+
+<body>
+
+<main id="faq-page">
+    <header id="faq-header">
+        <h1>Jeff's F.A.Q.</h1>
+    </header>
+
+    <section id="faq-list" aria-label="Frequently asked questions">
+        <!-- Replace these placeholder entries with the final copy. -->
+        <article class="faq-entry">
+            <h2 class="faq-question">
+                This is a placeholder question?
+            </h2>
+
+            <p class="faq-answer">
+                This is placeholder answer text. Replace it with the
+                answer you would like visitors to read.
+            </p>
+        </article>
+
+        <article class="faq-entry">
+            <h2 class="faq-question">
+                Where does another question go?
+            </h2>
+
+            <p class="faq-answer">
+                Each question and answer belongs inside its own FAQ
+                entry. Duplicate an entry whenever you need another.
+            </p>
+        </article>
+
+        <article class="faq-entry">
+            <h2 class="faq-question">
+                What does the final entry look like?
+            </h2>
+
+            <p class="faq-answer">
+                The final entry does not display a separator beneath
+                it, keeping the end of the list visually clean.
+            </p>
+        </article>
+    </section>
+
+    <img
+        id="faq-image"
+        src="/jeff/faq/faqimage.png"
+        alt=""
+        draggable="false"
+    >
+</main>
+
+</body>
+</html>
