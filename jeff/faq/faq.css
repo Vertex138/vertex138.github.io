@@ -1,7 +1,7 @@
 :root {
     --faq-background: #E6D79E;
     --faq-text: #171717;
-    --faq-answer-text: #343434;
+    --faq-answer-text: #484848;
 }
 
 html,
@@ -74,7 +74,7 @@ body {
 
 .faq-question {
     margin: 0 0 clamp(12px, 2vh, 20px);
-    font-size: clamp(26px, 4vw, 42px);
+    font-size: clamp(26px, 4vw, 30px);
     font-weight: normal;
     line-height: 1.15;
 }
@@ -82,7 +82,7 @@ body {
 .faq-answer {
     margin: 0;
     color: var(--faq-answer-text);
-    font-size: clamp(17px, 2.4vw, 24px);
+    font-size: clamp(17px, 2.4vw, 20px);
     line-height: 1.45;
 }
 
