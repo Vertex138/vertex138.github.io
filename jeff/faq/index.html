@@ -8,46 +8,8 @@
     content="width=device-width, initial-scale=1.0, viewport-fit=cover"
 >
 
-<script>
-(() => {
-    "use strict";
-
-    const FAQ_UNLOCK_REQUIREMENT = 25;
-    const TOTAL_IMAGE_GOAL = 150;
-    const VIEWED_IMAGES_KEY = "viewedImages";
-    const ROOT_PAGE = "/jeff/";
-
-    let viewedCount = 0;
-
-    try {
-        const storedIds = JSON.parse(
-            localStorage.getItem(VIEWED_IMAGES_KEY) || "[]"
-        );
-
-        if (Array.isArray(storedIds)) {
-            viewedCount = new Set(
-                storedIds
-                    .map(Number)
-                    .filter(imageId => (
-                        Number.isInteger(imageId) &&
-                        imageId >= 1 &&
-                        imageId <= TOTAL_IMAGE_GOAL
-                    ))
-            ).size;
-        }
-
-    } catch (error) {
-        viewedCount = 0;
-    }
-
-    if (viewedCount < FAQ_UNLOCK_REQUIREMENT) {
-        window.location.replace(ROOT_PAGE);
-        return;
-    }
-
-    document.documentElement.style.display = "";
-})();
-</script>
+<!-- Runs immediately so locked visitors are redirected before the page loads. -->
+<script src="/jeff/faq/faq.js"></script>
 
 <title>Jeff's FAQ</title>
 
@@ -92,171 +54,14 @@
         <h1>Jeff's FAQ</h1>
     </header>
 
-    <section id="faq-list" aria-label="Frequently asked questions">
-        <article class="faq-entry">
-            <h2 class="faq-question">
-                Who is Jeff?
-            </h2>
-
-            <p class="faq-answer">
-                Jefferson (or Jeff) is an American Domestic Shorthair who
-                lives in southern NH. He was adopted from a shelter on
-                November 30, 2020, and is approximately 8 years old.
-            </p>
-        </article>
-
-        <article class="faq-entry">
-            <h2 class="faq-question">
-                Where did the name "Jefferson" come from?
-            </h2>
-
-            <p class="faq-answer">
-                We don't know. Jeff came to us from the shelter with this
-                name. We did give him his middle name: Elmer. Because he
-                looks like he's been glued together.
-            </p>
-        </article>
-
-        <article class="faq-entry">
-            <h2 class="faq-question">
-                Can I "Meet Jeff"?
-            </h2>
-
-            <p class="faq-answer">
-                Yeah, you already have. Go back to the "Meet Jeff" page if
-                you'd like to see him again!
-            </p>
-        </article>
-
-        <article class="faq-entry">
-            <h2 class="faq-question">
-                Okay, but can I <i>actually</i> "Meet Jeff"?
-            </h2>
-
-            <p class="faq-answer">
-                No, sorry. Jefferson is far too shy for that. Plus, he's an
-                indoor cat. Jeff will not be giving autographs at this time.
-                Thank you.
-            </p>
-        </article>
-
-        <article class="faq-entry">
-            <h2 class="faq-question">
-                How many pictures of Jeff are there?
-            </h2>
-
-            <p class="faq-answer">
-                On this website? 150. In total? Many, many more than that.
-            </p>
-        </article>
-
-        <article class="faq-entry">
-            <h2 class="faq-question">
-                Why are there specifically 150 pictures of Jeff?
-            </h2>
-
-            <p class="faq-answer">
-                100 pictures didn't feel like enough to convey the true
-                essence of Jeff!
-            </p>
-        </article>
-
-        <article class="faq-entry">
-            <h2 class="faq-question">
-                Are you going to add more pictures of Jeff?
-            </h2>
-
-            <p class="faq-answer">
-                Probably not. This website is hosted on a service that only
-                allows so much storage space. I've already had to restrict
-                myself.
-            </p>
-        </article>
-
-        <article class="faq-entry">
-            <h2 class="faq-question">
-                Who are you?
-            </h2>
-
-            <p class="faq-answer">
-                Jeff was adopted by my mother. I suppose that makes me
-                Jefferson's... brother?
-            </p>
-        </article>
-
-        <article class="faq-entry">
-            <h2 class="faq-question">
-                Why did you make this website dedicated to Jeff?
-            </h2>
-
-            <p class="faq-answer">
-                Jefferson is a cat who is very easy to take ridiculous
-                photos of. I also love him very much and wanted to share him
-                with more people.
-            </p>
-        </article>
-
-        <article class="faq-entry">
-            <h2 class="faq-question">
-                Did you put up the "Meet Jeff" stickers?
-            </h2>
-
-            <p class="faq-answer">
-                Some of them, yes. I have also given a number of them to
-                friends and family, with instructions to
-                <u>put them up only with permission whenever possible</u>,
-                or alongside other stickers in a public art installation.
-            </p>
-
-            <p class="faq-answer">
-                If this sticker was put up someplace it shouldn't have been,
-                I apologize. You can remove the sticker by catching the
-                corner with a blade and peeling slowly. It's vinyl, so it
-                should peel off in one piece. Any leftover residue can be
-                cleaned with hydrogen peroxide.
-            </p>
-        </article>
-
-        <article class="faq-entry">
-            <h2 class="faq-question">
-                Where were the stickers printed?
-            </h2>
-
-            <p class="faq-answer">
-                I used a service called StickerApp. They're pretty cool.
-            </p>
-        </article>
-
-        <article class="faq-entry">
-            <h2 class="faq-question">
-                What fonts are these?
-            </h2>
-
-            <p class="faq-answer">
-                The questions use "Matcha Mint," and the answers use
-                "Super Bouncer," as long as you don't have "Simplify Font"
-                enabled. I'll add the artists here later.
-            </p>
-        </article>
-
-        <article class="faq-entry">
-            <h2 class="faq-question">
-                Was generative AI used during this project?
-            </h2>
-
-            <p class="faq-answer">
-                <u>Regretfully, YES. But...</u>
-            </p>
-
-            <p class="faq-answer">
-                All pictures and designs on this website were created or
-                sourced by me, my family, or other <i>real human beings</i>.
-                Generative AI has only been used during the debugging
-                process for JavaScript and CSS. I'm not a web designer. This
-                website is practically held together with masking tape and
-                dreams. And cat fur. A <i>lot</i> of cat fur...
-            </p>
-        </article>
+    <section
+        id="faq-list"
+        aria-label="Frequently asked questions"
+        aria-busy="true"
+    >
+        <p id="faq-status" role="status" aria-live="polite">
+            Loading FAQ…
+        </p>
     </section>
 
     <img
