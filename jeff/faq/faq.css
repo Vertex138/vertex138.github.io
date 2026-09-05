@@ -98,10 +98,16 @@ body {
     font-family: var(--faq-answer-font);
     font-size: clamp(17px, 2.4vw, 20px);
     line-height: 1.45;
+    white-space: pre-wrap;
 }
 
-.faq-answer + .faq-answer {
-    margin-top: 1em;
+#faq-status {
+    margin: 0;
+    color: var(--faq-answer-text);
+    font-family: var(--faq-answer-font);
+    font-size: clamp(17px, 2.4vw, 20px);
+    line-height: 1.45;
+    text-align: center;
 }
 
 html.simplified-font .faq-question {
