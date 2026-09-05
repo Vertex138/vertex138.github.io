@@ -1,7 +1,20 @@
+@font-face {
+    font-family: "Super Bouncer";
+    src: url("/jeff/fonts/SuperBouncer.woff2") format("woff2");
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
 :root {
     --faq-background: #E6D79E;
     --faq-text: #171717;
     --faq-answer-text: #484848;
+    --faq-answer-font: "Super Bouncer", Tahoma, sans-serif;
+}
+
+html.simplified-font {
+    --faq-answer-font: Tahoma, sans-serif;
 }
 
 html,
@@ -82,8 +95,13 @@ body {
 .faq-answer {
     margin: 0;
     color: var(--faq-answer-text);
+    font-family: var(--faq-answer-font);
     font-size: clamp(17px, 2.4vw, 20px);
     line-height: 1.45;
+}
+
+.faq-answer + .faq-answer {
+    margin-top: 1em;
 }
 
 html.simplified-font .faq-question {
