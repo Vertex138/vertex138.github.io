@@ -18,8 +18,8 @@
         { label: "Meet Jeff", href: "/jeff/", required: 0 },
         { label: "Jeff Gallery", href: "/jeff/gallery", required: 5 },
         { label: "Jeff's FAQ", href: "/jeff/faq", required: 25 },
-        { label: "Jeff's Mailbox", href: "/jeff/contact", required: 50 },
-        { label: "Help Jeff?", href: "/jeff/help", required: 75 },
+        { label: "Help Jeff?", href: "/jeff/help", required: 50 },
+        { label: "Jeff's Mailbox", href: "/jeff/contact", required: 100 },
         { label: "Thank you!", href: "/jeff/thanks", required: 150 }
     ];
 
