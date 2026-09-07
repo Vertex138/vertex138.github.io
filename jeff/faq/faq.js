@@ -100,6 +100,7 @@
     async function loadFaq() {
         const faqList = document.getElementById("faq-list");
         const status = document.getElementById("faq-status");
+        const faqImage = document.getElementById("faq-image");
 
         try {
             const response = await fetch(FAQ_DATA_SOURCE);
@@ -123,9 +124,11 @@
             });
 
             faqList.replaceChildren(fragment);
+            faqImage.hidden = false;
 
         } catch (error) {
             console.error(error);
+            faqImage.hidden = true;
 
             status.textContent =
                 "Jeff's FAQ could not be loaded.";
