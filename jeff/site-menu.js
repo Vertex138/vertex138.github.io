@@ -462,7 +462,7 @@
                         )
                 );
                 status.textContent = (
-                    `LOCKED * ${viewedCount} / ${required}`
+                    `LOCKED • ${viewedCount} / ${required}`
                 );
             }
         });
