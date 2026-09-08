@@ -15,12 +15,12 @@
     };
 
     const MENU_LINKS = [
-        { label: "Meet Jeff", href: "/jeff/", required: 0 },
-        { label: "Jeff Gallery", href: "/jeff/gallery", required: 5 },
-        { label: "Jeff's FAQ", href: "/jeff/faq", required: 25 },
-        { label: "Help Jeff?", href: "/jeff/help", required: 50 },
-        { label: "Jeff's Mailbox", href: "/jeff/contact", required: 100 },
-        { label: "Thank you!", href: "/jeff/thanks", required: 150 }
+        { label: "Meet Jeff", href: "/jeff/", required: 0, hidden: false },
+        { label: "Jeff Gallery", href: "/jeff/gallery", required: 5, hidden: false },
+        { label: "Jeff's FAQ", href: "/jeff/faq", required: 25, hidden: true },
+        { label: "Help Jeff?", href: "/jeff/help", required: 50, hidden: true },
+        { label: "Jeff's Mailbox", href: "/jeff/contact", required: 100, hidden: true },
+        { label: "Thank you!", href: "/jeff/thanks", required: 150, hidden: true }
     ];
 
     const UNLOCK_LEVELS = MENU_LINKS
@@ -33,7 +33,16 @@
 
     let forceNewReady = !document.getElementById("random-image");
 
-    function menuLinkMarkup({ label, href, required }) {
+    function menuLinkMarkup({
+        label,
+        href,
+        required,
+        hidden
+    }) {
+        const initialLabel = hidden && required > 0
+            ? "? ? ? ? ? ? ?"
+            : label;
+
         return `
             <li>
                 <a
@@ -41,8 +50,11 @@
                     data-href="${href}"
                     data-unlock="${required}"
                     data-label="${label}"
+                    data-hidden-label="${hidden}"
                 >
-                    <span>${label}</span>
+                    <span class="site-menu-item-label">
+                        ${initialLabel}
+                    </span>
                     <span
                         class="site-menu-unlock-status"
                         aria-hidden="true"
@@ -404,11 +416,25 @@
             const required = Number(link.dataset.unlock);
             const unlocked = viewedCount >= required;
             const label = link.dataset.label;
+            const hideLabelWhenLocked = (
+                link.dataset.hiddenLabel === "true"
+            );
+
+            const labelElement = link.querySelector(
+                ".site-menu-item-label"
+            );
+
             const status = link.querySelector(
                 ".site-menu-unlock-status"
             );
 
             link.classList.toggle("is-locked", !unlocked);
+
+            labelElement.textContent = (
+                !unlocked && hideLabelWhenLocked
+            )
+                ? "? ? ? ? ? ? ?"
+                : label;
 
             if (unlocked) {
                 link.setAttribute("href", link.dataset.href);
@@ -423,9 +449,21 @@
                 link.setAttribute("tabindex", "-1");
                 link.setAttribute(
                     "aria-label",
-                    `${label}, locked until ${required} unique pictures are seen`
+                    hideLabelWhenLocked
+                        ? (
+                            `Unknown menu item, locked. ` +
+                            `${viewedCount} of ${required} ` +
+                            `unique pictures discovered.`
+                        )
+                        : (
+                            `${label}, locked. ` +
+                            `${viewedCount} of ${required} ` +
+                            `unique pictures discovered.`
+                        )
                 );
-                status.textContent = `LOCKED · ${required}`;
+                status.textContent = (
+                    `LOCKED * ${viewedCount} / ${required}`
+                );
             }
         });
 
