@@ -20,7 +20,7 @@
         { label: "Jeff's FAQ", href: "/jeff/faq", required: 25, hidden: true },
         { label: "Help Jeff?", href: "/jeff/help", required: 50, hidden: true },
         { label: "Jeff's Mailbox", href: "/jeff/contact", required: 100, hidden: true },
-        { label: "Thank you!", href: "/jeff/thanks", required: 150, hidden: true }
+        { label: "Thank you!", href: "/jeff/thanks", required: 150, hidden: false }
     ];
 
     const UNLOCK_LEVELS = MENU_LINKS
