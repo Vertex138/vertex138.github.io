@@ -235,7 +235,7 @@ html.site-menu-open #site-menu-panel {
 .site-menu-unlock-status {
     flex: 0 0 auto;
     font-family: Tahoma, sans-serif;
-    font-size: clamp(10px, 1.5vw, 12px);
+    font-size: clamp(13px, 1.8vw, 15px);
     letter-spacing: 0.5px;
     white-space: nowrap;
 }
