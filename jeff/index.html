@@ -1,177 +1,126 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
-<head>
-<meta charset="UTF-8">
-<meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
->
+    <title>Meet Jeff</title>
 
-<title>Meet Jeff</title>
+    <link rel="icon" href="/jeff/icons/favicon.ico" sizes="any" />
 
-<link
-    rel="icon"
-    href="/jeff/icons/favicon.ico"
-    sizes="any"
->
+    <link rel="icon" type="image/png" sizes="32x32" href="/jeff/icons/favicon-32x32.png" />
 
-<link
-    rel="icon"
-    type="image/png"
-    sizes="32x32"
-    href="/jeff/icons/favicon-32x32.png"
->
+    <link rel="apple-touch-icon" sizes="180x180" href="/jeff/icons/apple-touch-icon.png" />
 
-<link
-    rel="apple-touch-icon"
-    sizes="180x180"
-    href="/jeff/icons/apple-touch-icon.png"
->
+    <link
+      rel="preload"
+      href="/jeff/fonts/MatchaMint.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
 
-<link
-    rel="preload"
-    href="/jeff/fonts/MatchaMint.woff2"
-    as="font"
-    type="font/woff2"
-    crossorigin
->
+    <link
+      rel="preload"
+      href="/jeff/fonts/SuperBouncer.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
 
-<link
-    rel="preload"
-    href="/jeff/fonts/SuperBouncer.woff2"
-    as="font"
-    type="font/woff2"
-    crossorigin
->
+    <link rel="stylesheet" href="menu/site-menu.css" />
+    <link rel="stylesheet" href="styles.css?v=4" />
 
-<link rel="stylesheet" href="site-menu.css">
-<link rel="stylesheet" href="styles.css?v=4">
+    <script src="menu/site-menu.js" defer></script>
+    <script src="app.js" defer></script>
+  </head>
 
-<script src="site-menu.js" defer></script>
-<script src="app.js" defer></script>
-</head>
+  <body>
+    <div id="image-container">
+      <img id="random-image" alt="Randomly selected image" draggable="false" />
 
-<body>
+      <span id="image-id-tag" aria-live="polite"></span>
 
-<div id="image-container">
-    <img
-        id="random-image"
-        alt="Randomly selected image"
-        draggable="false"
-    >
+      <p id="tap-guidance" hidden>Tap Jeff to see more!</p>
+    </div>
 
-    <span id="image-id-tag" aria-live="polite"></span>
+    <div id="new-indicator" aria-hidden="true">
+      <span id="new-symbol">★</span>
 
-    <p id="tap-guidance" hidden>
-        Tap Jeff to see more!
-    </p>
-</div>
+      <span id="new-label">NEW!</span>
 
-<div id="new-indicator" aria-hidden="true">
-    <span id="new-symbol">★</span>
-
-    <span id="new-label">NEW!</span>
-
-    <span id="new-counter">
+      <span id="new-counter">
         <span id="viewed-count">0</span>
         /
         <span id="image-goal">150</span>
-    </span>
-</div>
+      </span>
+    </div>
 
-<div
-    id="intro-overlay"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="intro-title"
-    aria-describedby="intro-welcome intro-unlocks intro-accessibility intro-storage"
-    hidden
->
-    <div id="intro-card">
+    <div
+      id="intro-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="intro-title"
+      aria-describedby="intro-welcome intro-unlocks intro-accessibility intro-storage"
+      hidden
+    >
+      <div id="intro-card">
         <h1 id="intro-title">Say hello to Jeff!</h1>
 
         <p id="intro-welcome" class="intro-copy">
-            Jefferson is excited to meet you. Tap Jeff to discover
-            more pictures of him.
+          Jefferson is excited to meet you. Tap Jeff to discover more pictures of him.
         </p>
 
         <p id="intro-unlocks" class="intro-copy">
-            Every unique picture you discover unlocks more of
-            Jeff's website.
+          Every unique picture you discover unlocks more of Jeff's website.
         </p>
 
         <p id="intro-accessibility">
-            Need a different viewing experience? Open
-            <strong>Accessibility</strong> in the menu to adjust
-            Reduced Motion and Simplify Font.
+          Need a different viewing experience? Open
+          <strong>Accessibility</strong> in the menu to adjust Reduced Motion and Simplify Font.
         </p>
 
         <p id="intro-storage">
-            This site uses local storage to remember your Jeff
-            discoveries and settings within this browser.
+          This site uses local storage to remember your Jeff discoveries and settings within this
+          browser.
         </p>
 
-        <button id="intro-dismiss-button" type="button">
-            Meet Jeff!
-        </button>
+        <button id="intro-dismiss-button" type="button">Meet Jeff!</button>
+      </div>
     </div>
-</div>
 
-<div
-    id="collection-complete-star"
-    role="img"
-    aria-label="You've completed Jeff's gallery"
-    title="You've completed Jeff's gallery"
-    hidden
->
-    ★
-</div>
-
-<div
-    id="collection-complete-overlay"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="collection-complete-title"
-    hidden
->
-    <div id="collection-complete-card">
-        <div id="collection-complete-symbol" aria-hidden="true">
-            ★
-        </div>
-
-        <h1 id="collection-complete-title">
-            You've Completed Jeff's Gallery!
-        </h1>
-
-        <button
-            id="collection-continue-button"
-            type="button"
-        >
-            Meow!
-        </button>
+    <div
+      id="collection-complete-star"
+      role="img"
+      aria-label="You've completed Jeff's gallery"
+      title="You've completed Jeff's gallery"
+      hidden
+    >
+      ★
     </div>
-</div>
 
-<div
-    id="error-overlay"
-    role="alert"
-    aria-live="assertive"
-    hidden
->
-    <div id="error-content">
-        <p id="error-message">
-            Oops! Something went wrong. Maybe Jeff is feeling shy today?
-        </p>
+    <div
+      id="collection-complete-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="collection-complete-title"
+      hidden
+    >
+      <div id="collection-complete-card">
+        <div id="collection-complete-symbol" aria-hidden="true">★</div>
 
-        <button
-            id="retry-button"
-            type="button"
-        >
-            RETRY
-        </button>
+        <h1 id="collection-complete-title">You've Completed Jeff's Gallery!</h1>
+
+        <button id="collection-continue-button" type="button">Meow!</button>
+      </div>
     </div>
-</div>
 
-</body>
+    <div id="error-overlay" role="alert" aria-live="assertive" hidden>
+      <div id="error-content">
+        <p id="error-message">Oops! Something went wrong. Maybe Jeff is feeling shy today?</p>
+
+        <button id="retry-button" type="button">RETRY</button>
+      </div>
+    </div>
+  </body>
 </html>
