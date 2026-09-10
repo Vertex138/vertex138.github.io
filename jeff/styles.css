@@ -1,3 +1,11 @@
+@font-face {
+    font-family: "Super Bouncer";
+    src: url("/jeff/fonts/SuperBouncer.woff2") format("woff2");
+    font-style: normal;
+    font-weight: normal;
+    font-display: swap;
+}
+
 :root {
     /*
      * Mobile space reserved for fixed interface elements. Increase
@@ -72,6 +80,10 @@ body {
     letter-spacing: 0.5px;
 
     user-select: none;
+}
+
+html.simplified-font #image-id-tag {
+    font-weight: bold;
 }
 
 #tap-guidance {
@@ -283,6 +295,30 @@ html.gallery-locked #random-image {
     display: none !important;
 }
 
+#intro-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2500;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    width: 100vw;
+    min-height: 100vh;
+    min-height: 100dvh;
+    box-sizing: border-box;
+    padding: 24px;
+
+    background: rgba(0, 0, 0, 0.62);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+}
+
+#intro-overlay[hidden] {
+    display: none;
+}
+
 #collection-complete-overlay,
 #error-overlay {
     position: fixed;
@@ -308,12 +344,67 @@ html.gallery-locked #random-image {
     z-index: 3000;
 }
 
+#intro-card,
 #collection-complete-card,
 #error-content {
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
+}
+
+#intro-card {
+    width: min(520px, calc(100vw - 48px));
+    max-height: calc(100vh - 48px);
+    max-height: calc(100dvh - 48px);
+    box-sizing: border-box;
+    padding: clamp(24px, 5vw, 38px);
+    gap: clamp(16px, 3vh, 24px);
+    overflow-y: auto;
+    border-radius: 20px;
+
+    background: #f2e7bd;
+    color: #171717;
+    box-shadow: 0 10px 35px rgba(0, 0, 0, 0.35);
+}
+
+#intro-title,
+.intro-copy,
+#intro-accessibility,
+#intro-storage {
+    margin: 0;
+}
+
+#intro-title {
+    font-family: "Matcha Mint", Tahoma, sans-serif;
+    font-size: clamp(32px, 7vw, 50px);
+    font-weight: normal;
+    line-height: 1;
+}
+
+.intro-copy {
+    font-family: "Super Bouncer", Tahoma, sans-serif;
+    font-size: clamp(18px, 3.5vw, 23px);
+    font-weight: normal;
+    line-height: 1.35;
+}
+
+#intro-accessibility {
+    font-family: Tahoma, sans-serif;
+    font-size: clamp(15px, 2.8vw, 18px);
+    line-height: 1.4;
+}
+
+#intro-storage {
+    font-family: Tahoma, sans-serif;
+    font-size: clamp(11px, 2.2vw, 13px);
+    line-height: 1.4;
+    opacity: 0.76;
+}
+
+html.simplified-font #intro-title,
+html.simplified-font .intro-copy {
+    font-family: Tahoma, sans-serif;
 }
 
 #collection-complete-card {
@@ -346,6 +437,7 @@ html.gallery-locked #random-image {
     letter-spacing: 1px;
 }
 
+#intro-dismiss-button,
 #collection-continue-button,
 #retry-button {
     padding: 10px 22px;
@@ -358,6 +450,11 @@ html.gallery-locked #random-image {
 
     cursor: pointer;
     touch-action: manipulation;
+}
+
+#intro-dismiss-button {
+    background: rgba(39, 33, 18, 0.86);
+    color: white;
 }
 
 #collection-continue-button {
@@ -379,6 +476,8 @@ html.gallery-locked #random-image {
     color: white;
 }
 
+#intro-dismiss-button:hover,
+#intro-dismiss-button:focus-visible,
 #collection-continue-button:hover,
 #retry-button:hover {
     filter: brightness(1.15);
@@ -444,12 +543,17 @@ html.gallery-locked #random-image {
     grid-column: 2;
     grid-row: 2;
 
+    font-family: "Super Bouncer", Tahoma, sans-serif;
     font-size: clamp(10px, 1.2vw, 13px);
     font-weight: normal;
     letter-spacing: 0.3px;
     text-align: center;
 
     opacity: 0.8;
+}
+
+html.simplified-font #new-counter {
+    font-family: Tahoma, sans-serif;
 }
 
 #viewed-count {
