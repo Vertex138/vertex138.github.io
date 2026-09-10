@@ -1,11 +1,3 @@
-@font-face {
-    font-family: "Super Bouncer";
-    src: url("/jeff/fonts/SuperBouncer.woff2") format("woff2");
-    font-style: normal;
-    font-weight: normal;
-    font-display: swap;
-}
-
 :root {
     /*
      * Mobile space reserved for fixed interface elements. Increase
@@ -452,17 +444,12 @@ html.gallery-locked #random-image {
     grid-column: 2;
     grid-row: 2;
 
-    font-family: "Super Bouncer", Tahoma, sans-serif;
     font-size: clamp(10px, 1.2vw, 13px);
     font-weight: normal;
     letter-spacing: 0.3px;
     text-align: center;
 
     opacity: 0.8;
-}
-
-html.simplified-font #new-counter {
-    font-family: Tahoma, sans-serif;
 }
 
 #viewed-count {
