@@ -11,6 +11,7 @@ const VIEWED_IMAGES_KEY = "viewedImages";
 const NO_NEW_STREAK_KEY = "noNewImageStreak";
 const COLLECTION_COMPLETE_ACKNOWLEDGED_KEY =
     "collectionCompleteAcknowledged";
+const INTRO_ACKNOWLEDGED_KEY = "introductionAcknowledged";
 
 const reducedMotionQuery = window.matchMedia(
     "(prefers-reduced-motion: reduce)"
@@ -205,14 +206,18 @@ function getViewedImageIds() {
  */
 
 function getGalleryUnlockRequirement() {
-    const sharedRequirement = window.JeffSite &&
-        typeof window.JeffSite.getUnlockRequirement === "function"
-        ? window.JeffSite.getUnlockRequirement("Gallery")
-        : null;
+    const galleryLink = document.querySelector(
+        `[data-href="/jeff/gallery"], ` +
+        `[data-href="/jeff/gallery/"]`
+    );
+
+    const sharedRequirement = Number(
+        galleryLink?.dataset.unlock
+    );
 
     return Number.isInteger(sharedRequirement) && sharedRequirement > 0
         ? sharedRequirement
-        : 10;
+        : 5;
 }
 
 /*
@@ -232,6 +237,65 @@ function updateTapGuidance(viewedCount = getViewedImageIds().length) {
     document.getElementById("tap-guidance").hidden = !galleryLocked;
 
     return !galleryLocked;
+}
+
+/*
+ * Show the introduction once in this browser.
+ */
+
+function introductionWasAcknowledged() {
+    try {
+        return localStorage.getItem(
+            INTRO_ACKNOWLEDGED_KEY
+        ) === "true";
+
+    } catch (error) {
+        console.warn(
+            "Could not retrieve the introduction state:",
+            error
+        );
+
+        return false;
+    }
+}
+
+function showIntroductionIfNeeded() {
+    if (introductionWasAcknowledged()) {
+        return;
+    }
+
+    document.getElementById(
+        "intro-overlay"
+    ).hidden = false;
+
+    requestAnimationFrame(() => {
+        document.getElementById(
+            "intro-dismiss-button"
+        ).focus();
+    });
+}
+
+function dismissIntroduction() {
+    try {
+        localStorage.setItem(
+            INTRO_ACKNOWLEDGED_KEY,
+            "true"
+        );
+
+    } catch (error) {
+        console.warn(
+            "Could not save the introduction state:",
+            error
+        );
+    }
+
+    document.getElementById(
+        "intro-overlay"
+    ).hidden = true;
+
+    document.getElementById(
+        "site-menu-toggle"
+    )?.focus();
 }
 
 /*
@@ -1194,4 +1258,33 @@ document.getElementById("retry-button").addEventListener(
     retryLastFailedAction
 );
 
+/*
+ * Dismiss the first-visit introduction.
+ */
+
+document.getElementById(
+    "intro-dismiss-button"
+).addEventListener(
+    "click",
+    dismissIntroduction
+);
+
+document.getElementById(
+    "intro-overlay"
+).addEventListener("keydown", event => {
+    if (event.key === "Escape") {
+        dismissIntroduction();
+        return;
+    }
+
+    if (event.key === "Tab") {
+        event.preventDefault();
+
+        document.getElementById(
+            "intro-dismiss-button"
+        ).focus();
+    }
+});
+
+showIntroductionIfNeeded();
 initializePage();
