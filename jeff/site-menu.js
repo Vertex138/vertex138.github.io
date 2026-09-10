@@ -11,7 +11,8 @@
         reducedMotion: "reducedMotionPreference",
         simplifiedFont: "simplifiedFontPreference",
         unlockKnown: "menuUnlockKnownLevel",
-        unlockPending: "menuUnlockPendingLevel"
+        unlockPending: "menuUnlockPendingLevel",
+        introduction: "introductionAcknowledged"
     };
 
     const MENU_LINKS = [
@@ -568,6 +569,7 @@
             localStorage.removeItem(STORAGE_KEYS.completion);
             localStorage.removeItem(STORAGE_KEYS.unlockKnown);
             localStorage.removeItem(STORAGE_KEYS.unlockPending);
+            localStorage.removeItem(STORAGE_KEYS.introduction);
             localStorage.removeItem("menuUnlockNoticeLevel");
 
             hideUnlockNotice();
