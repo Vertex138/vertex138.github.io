@@ -41,22 +41,26 @@
         <p>How is Jefferson feeling today?</p>
       </header>
 
-      <div id="mood-meter" role="img" aria-label="Loading today's mood">
-        <svg viewBox="0 0 240 130" aria-hidden="true">
-          <path class="mood-meter-track" d="M 20 115 A 100 100 0 0 1 220 115" pathLength="100" />
-          <path
-            id="mood-meter-outline"
-            d="M 20 115 A 100 100 0 0 1 220 115"
-            pathLength="100"
-          />
-          <path
-            id="mood-meter-fill"
-            d="M 20 115 A 100 100 0 0 1 220 115"
-            pathLength="100"
-          />
-        </svg>
-        <output id="mood-value" aria-hidden="true">--%</output>
-      </div>
+      <section id="mood-summary" aria-label="Jeff's current mood">
+        <div id="mood-meter" role="img" aria-label="Loading Jeff's current mood">
+          <svg viewBox="0 0 240 130" aria-hidden="true">
+            <path class="mood-meter-track" d="M 20 115 A 100 100 0 0 1 220 115" pathLength="100" />
+            <path
+              id="mood-meter-outline"
+              d="M 20 115 A 100 100 0 0 1 220 115"
+              pathLength="100"
+            />
+            <path
+              id="mood-meter-fill"
+              d="M 20 115 A 100 100 0 0 1 220 115"
+              pathLength="100"
+            />
+          </svg>
+          <output id="mood-value" aria-hidden="true">--%</output>
+        </div>
+
+        <p id="mood-timestamp" hidden></p>
+      </section>
 
       <figure id="mood-figure" hidden>
         <div id="mood-image-stage">
