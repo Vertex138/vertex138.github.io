@@ -142,6 +142,7 @@
 
   function displayMeter(mood) {
     const meter = document.getElementById("mood-meter");
+    const outline = document.getElementById("mood-meter-outline");
     const fill = document.getElementById("mood-meter-fill");
     const value = document.getElementById("mood-value");
     const color = hsvToRgb(mood, 0.7, 0.9);
@@ -149,8 +150,10 @@
     document.documentElement.style.setProperty("--mood-color", color);
     value.textContent = `${mood}%`;
     meter.setAttribute("aria-label", `Jeff's mood today is ${mood} percent`);
+    meter.classList.add("is-ready");
 
     const applyFill = () => {
+      outline.style.strokeDasharray = `${mood} 100`;
       fill.style.strokeDasharray = `${mood} 100`;
     };
     if (reducedMotionEnabled()) {
@@ -308,8 +311,6 @@
       image.alt = `Jeff illustrating today's ${mood}% mood`;
       document.getElementById("mood-caption").textContent = caption;
       figure.hidden = false;
-      figure.classList.remove("slide-in", "fade-in");
-      figure.classList.add(reducedMotionEnabled() ? "fade-in" : "slide-in");
       recordDisplayedImage(imageId);
     } catch (error) {
       console.error(error);
