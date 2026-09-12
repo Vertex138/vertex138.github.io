@@ -5,8 +5,27 @@
   const TOTAL_IMAGE_GOAL = 150;
   const RECENT_IMAGE_LIMIT = 10;
   const ROOT_PAGE = "/jeff/";
+  const MOOD_TIME_ZONE = "America/New_York";
+  const MOOD_HOURS = [0, 4, 8, 12, 16, 20];
+  const MOOD_COUNT = 20;
+  const MONTH_NAMES = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
+  ];
+  const EASTERN_PARTS_FORMATTER = new Intl.DateTimeFormat("en-US", {
+    timeZone: MOOD_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  });
+  const EASTERN_ZONE_FORMATTER = new Intl.DateTimeFormat("en-US", {
+    timeZone: MOOD_TIME_ZONE,
+    timeZoneName: "short",
+  });
   const SOURCES = {
-    today: "/jeff/mood/today.txt",
     captions: "/jeff/mood/mood.json",
     moodImages: "/jeff/mood/mood_img.json",
     images: "/jeff/images.json",
@@ -19,6 +38,8 @@
   };
 
   let countAnimationTimeout = null;
+  let moodRefreshTimeout = null;
+  let activeMoodSeed = null;
   let loading = false;
 
   function isValidImageId(value) {
@@ -71,14 +92,6 @@
     return value !== null && typeof value === "object" && !Array.isArray(value);
   }
 
-  async function fetchText(source, noStore = false) {
-    const response = await fetch(source, noStore ? { cache: "no-store" } : undefined);
-    if (!response.ok) {
-      throw new Error(`Could not load ${source}: ${response.status}`);
-    }
-    return response.text();
-  }
-
   async function fetchJson(source) {
     const response = await fetch(source);
     if (!response.ok) {
@@ -87,12 +100,134 @@
     return response.json();
   }
 
-  function validateMood(value) {
-    const mood = Number(value.trim());
-    if (!Number.isInteger(mood) || mood < 5 || mood > 100 || mood % 5 !== 0) {
-      throw new Error("today.txt must contain a multiple of 5 from 5 through 100.");
+  async function fetchCaptionsAndTime() {
+    const url = new URL(SOURCES.captions, window.location.href);
+    const cacheKey = window.crypto?.randomUUID?.() || Math.random().toString(36).slice(2);
+    url.searchParams.set("_clock", cacheKey);
+
+    const response = await fetch(url, { cache: "no-store" });
+    if (!response.ok) {
+      throw new Error(`Could not load ${SOURCES.captions}: ${response.status}`);
     }
-    return mood;
+
+    const dateHeader = response.headers.get("Date");
+    const serverTime = dateHeader ? new Date(dateHeader) : new Date(Number.NaN);
+
+    if (Number.isNaN(serverTime.getTime())) {
+      console.warn("A shared server time was unavailable; using this device's clock.");
+    }
+
+    return {
+      captions: await response.json(),
+      now: Number.isNaN(serverTime.getTime()) ? new Date() : serverTime,
+    };
+  }
+
+  function getEasternParts(date) {
+    const parts = EASTERN_PARTS_FORMATTER.formatToParts(date);
+    const values = Object.fromEntries(parts.map(({ type, value }) => [type, value]));
+
+    return {
+      year: Number(values.year),
+      month: Number(values.month),
+      day: Number(values.day),
+      hour: Number(values.hour),
+      minute: Number(values.minute),
+    };
+  }
+
+  function makeMoodSeed({ year, month, day, hour }) {
+    return [year, month, day, hour]
+      .map((value, index) => String(value).padStart(index === 0 ? 4 : 2, "0"))
+      .join("");
+  }
+
+  function hashSeed(seed) {
+    let hash = 2166136261;
+    for (const character of seed) {
+      hash ^= character.charCodeAt(0);
+      hash = Math.imul(hash, 16777619);
+    }
+    return hash >>> 0;
+  }
+
+  function shiftCalendarDate({ year, month, day }, amount) {
+    const shifted = new Date(Date.UTC(year, month - 1, day + amount));
+    return {
+      year: shifted.getUTCFullYear(),
+      month: shifted.getUTCMonth() + 1,
+      day: shifted.getUTCDate(),
+    };
+  }
+
+  function getDayMoodIndexes(dateParts) {
+    const used = new Set();
+
+    return MOOD_HOURS.map((hour) => {
+      const seed = makeMoodSeed({ ...dateParts, hour });
+      let index = hashSeed(seed) % MOOD_COUNT;
+
+      while (used.has(index)) {
+        index = (index + 1) % MOOD_COUNT;
+      }
+
+      used.add(index);
+      return index;
+    });
+  }
+
+  function getMoodPeriod(now) {
+    const current = getEasternParts(now);
+    const dateParts = { year: current.year, month: current.month, day: current.day };
+    const periodHour = Math.floor(current.hour / 4) * 4;
+    const period = { ...dateParts, hour: periodHour };
+    const moodIndexes = getDayMoodIndexes(dateParts);
+    const previousDate = shiftCalendarDate(dateParts, -1);
+    const previousDayIndexes = getDayMoodIndexes(previousDate);
+
+    // Swapping the first two values prevents a repeat across midnight while
+    // preserving six unique moods within every day.
+    if (moodIndexes[0] === previousDayIndexes[previousDayIndexes.length - 1]) {
+      [moodIndexes[0], moodIndexes[1]] = [moodIndexes[1], moodIndexes[0]];
+    }
+
+    return {
+      ...period,
+      seed: makeMoodSeed(period),
+      mood: (moodIndexes[periodHour / 4] + 1) * 5,
+    };
+  }
+
+  function getTimeZoneName(now) {
+    const part = EASTERN_ZONE_FORMATTER
+      .formatToParts(now)
+      .find(({ type }) => type === "timeZoneName");
+    return part?.value || "ET";
+  }
+
+  function formatMoodTimestamp(period, now) {
+    const displayHour = period.hour % 12 || 12;
+    const meridiem = period.hour < 12 ? "AM" : "PM";
+    return `Mood as of ${MONTH_NAMES[period.month - 1]} ${period.day}, ${period.year}, `
+      + `at ${displayHour} ${meridiem} ${getTimeZoneName(now)}`;
+  }
+
+  function millisecondsUntilNextMood(now) {
+    let candidate = Math.floor(now.getTime() / 60000) * 60000 + 60000;
+
+    for (let minute = 0; minute < 360; minute += 1, candidate += 60000) {
+      const parts = getEasternParts(new Date(candidate));
+      if (parts.minute === 0 && parts.hour % 4 === 0) {
+        return candidate - now.getTime();
+      }
+    }
+
+    return 4 * 60 * 60 * 1000;
+  }
+
+  function scheduleMoodRefresh(now) {
+    clearTimeout(moodRefreshTimeout);
+    moodRefreshTimeout = setTimeout(initializeMood, millisecondsUntilNextMood(now) + 1500);
   }
 
   function getMappedValue(map, mood, name) {
@@ -140,16 +275,20 @@
     )}, ${Math.round((blue + minimum) * 255)})`;
   }
 
-  function displayMeter(mood) {
+  function displayMeter(mood, period, now) {
     const meter = document.getElementById("mood-meter");
     const outline = document.getElementById("mood-meter-outline");
     const fill = document.getElementById("mood-meter-fill");
     const value = document.getElementById("mood-value");
+    const timestamp = document.getElementById("mood-timestamp");
     const color = hsvToRgb(mood, 0.7, 0.9);
 
     document.documentElement.style.setProperty("--mood-color", color);
     value.textContent = `${mood}%`;
-    meter.setAttribute("aria-label", `Jeff's mood today is ${mood} percent`);
+    meter.dataset.seed = period.seed;
+    meter.setAttribute("aria-label", `Jeff's current mood is ${mood} percent`);
+    timestamp.textContent = formatMoodTimestamp(period, now);
+    timestamp.hidden = false;
     meter.classList.add("is-ready");
 
     const applyFill = () => {
@@ -283,13 +422,19 @@
     document.getElementById("mood-page").setAttribute("aria-busy", "true");
 
     try {
-      const [todayText, captions, moodImages, images] = await Promise.all([
-        fetchText(SOURCES.today, true),
-        fetchJson(SOURCES.captions),
+      const [{ captions, now }, moodImages, images] = await Promise.all([
+        fetchCaptionsAndTime(),
         fetchJson(SOURCES.moodImages),
         fetchJson(SOURCES.images),
       ]);
-      const mood = validateMood(todayText);
+      const period = getMoodPeriod(now);
+      const { mood } = period;
+
+      if (period.seed === activeMoodSeed) {
+        scheduleMoodRefresh(now);
+        return;
+      }
+
       const caption = getMappedValue(captions, mood, "mood.json");
       const imageId = Number(getMappedValue(moodImages, mood, "mood_img.json"));
 
@@ -306,12 +451,14 @@
       const image = document.getElementById("mood-image");
       const figure = document.getElementById("mood-figure");
 
-      displayMeter(mood);
+      displayMeter(mood, period, now);
       image.src = preloaded.src;
-      image.alt = `Jeff illustrating today's ${mood}% mood`;
+      image.alt = `Jeff illustrating his current ${mood}% mood`;
       document.getElementById("mood-caption").textContent = caption;
       figure.hidden = false;
+      activeMoodSeed = period.seed;
       recordDisplayedImage(imageId);
+      scheduleMoodRefresh(now);
     } catch (error) {
       console.error(error);
       showError();
@@ -343,6 +490,11 @@
   window.addEventListener("storage", (event) => {
     if (event.key === STORAGE_KEYS.viewed) {
       redirectIfMoodIsLocked();
+    }
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) {
+      initializeMood();
     }
   });
   document.addEventListener("jeff:history-cleared", redirectIfMoodIsLocked);
