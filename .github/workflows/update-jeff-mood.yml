@@ -23,6 +23,8 @@ jobs:
     steps:
       - name: Check out the repository
         uses: actions/checkout@v7
+        with:
+          token: ${{ secrets.JEFF_MOOD_TOKEN }}
 
       - name: Choose today's mood
         shell: bash
