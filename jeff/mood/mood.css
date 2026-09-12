@@ -71,6 +71,13 @@ body {
   width: min(64vw, 360px);
   min-height: 82px;
   aspect-ratio: 24 / 13;
+  visibility: hidden;
+  opacity: 0;
+}
+
+#mood-meter.is-ready {
+  visibility: visible;
+  opacity: 1;
 }
 
 #mood-meter svg {
@@ -81,20 +88,31 @@ body {
 }
 
 .mood-meter-track,
+#mood-meter-outline,
 #mood-meter-fill {
   fill: none;
-  stroke-width: 18;
   stroke-linecap: round;
 }
 
 .mood-meter-track {
   stroke: rgba(23, 23, 23, 0.12);
+  stroke-width: 22;
+}
+
+#mood-meter-outline,
+#mood-meter-fill {
+  stroke-dasharray: 0 100;
+  transition: stroke-dasharray 1.6s cubic-bezier(0.22, 0.8, 0.35, 1);
+}
+
+#mood-meter-outline {
+  stroke: black;
+  stroke-width: 22;
 }
 
 #mood-meter-fill {
   stroke: var(--mood-color);
-  stroke-dasharray: 0 100;
-  transition: stroke-dasharray 0.9s cubic-bezier(0.22, 0.8, 0.35, 1);
+  stroke-width: 16;
 }
 
 #mood-value {
@@ -107,6 +125,12 @@ body {
   font-size: clamp(25px, 6vmin, 48px);
   line-height: 1;
   white-space: nowrap;
+  -webkit-text-stroke: 1px black;
+  text-shadow:
+    -1px -1px 0 black,
+    1px -1px 0 black,
+    -1px 1px 0 black,
+    1px 1px 0 black;
 }
 
 #mood-figure {
@@ -150,30 +174,6 @@ body {
 
 html.simplified-font #mood-caption {
   color: var(--mood-text);
-}
-
-.slide-in {
-  animation: moodSlideIn 0.55s cubic-bezier(0.22, 0.8, 0.35, 1) both;
-}
-
-.fade-in {
-  animation: moodFadeIn 0.35s both;
-}
-
-@keyframes moodSlideIn {
-  from {
-    opacity: 0;
-    transform: translateX(110vw);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes moodFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
 }
 
 #new-indicator {
@@ -348,6 +348,7 @@ html.simplified-font #mood-caption {
   display: none !important;
 }
 
+html.reduced-motion #mood-meter-outline,
 html.reduced-motion #mood-meter-fill {
   transition: none;
 }
