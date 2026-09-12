@@ -1,0 +1,416 @@
+@font-face {
+  font-family: "Super Bouncer";
+  src: url("/jeff/fonts/SuperBouncer.woff2") format("woff2");
+  font-style: normal;
+  font-weight: normal;
+  font-display: swap;
+}
+
+:root {
+  --mood-background: #e6d79e;
+  --mood-text: #171717;
+  --mood-caption-font: "Super Bouncer", Tahoma, sans-serif;
+  --mood-color: #171717;
+}
+
+html.simplified-font {
+  --mood-caption-font: Tahoma, sans-serif;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+body {
+  background: var(--mood-background);
+  color: var(--mood-text);
+}
+
+#mood-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  box-sizing: border-box;
+  padding:
+    calc(max(2vh, env(safe-area-inset-top, 0px)) + clamp(58px, 8vh, 82px))
+    max(16px, env(safe-area-inset-right, 0px))
+    max(12px, env(safe-area-inset-bottom, 0px))
+    max(16px, env(safe-area-inset-left, 0px));
+  gap: clamp(6px, 1.2vh, 14px);
+  overflow: hidden;
+}
+
+#mood-header {
+  flex: 0 0 auto;
+  text-align: center;
+}
+
+#mood-header h1 {
+  margin: 0;
+  font-size: clamp(34px, 7vmin, 64px);
+  font-weight: normal;
+  line-height: 1;
+}
+
+#mood-header p {
+  margin: clamp(5px, 1vh, 12px) 0 0;
+  font-size: clamp(15px, 2.5vmin, 21px);
+  line-height: 1.15;
+}
+
+#mood-meter {
+  position: relative;
+  flex: 0 1 clamp(92px, 22vh, 205px);
+  width: min(64vw, 360px);
+  min-height: 82px;
+  aspect-ratio: 24 / 13;
+}
+
+#mood-meter svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.mood-meter-track,
+#mood-meter-fill {
+  fill: none;
+  stroke-width: 18;
+  stroke-linecap: round;
+}
+
+.mood-meter-track {
+  stroke: rgba(23, 23, 23, 0.12);
+}
+
+#mood-meter-fill {
+  stroke: var(--mood-color);
+  stroke-dasharray: 0 100;
+  transition: stroke-dasharray 0.9s cubic-bezier(0.22, 0.8, 0.35, 1);
+}
+
+#mood-value {
+  position: absolute;
+  left: 50%;
+  bottom: 2%;
+  transform: translateX(-50%);
+  color: var(--mood-color);
+  font-family: var(--mood-caption-font);
+  font-size: clamp(25px, 6vmin, 48px);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+#mood-figure {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: center;
+  width: min(92vw, 900px);
+  min-height: 0;
+  margin: 0;
+  gap: clamp(7px, 1.3vh, 14px);
+}
+
+#mood-image-stage {
+  display: grid;
+  flex: 1 1 auto;
+  place-items: center;
+  width: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+#mood-image {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+#mood-caption {
+  flex: 0 0 auto;
+  max-width: min(92vw, 760px);
+  color: #343434;
+  font-family: var(--mood-caption-font);
+  font-size: clamp(16px, 2.8vmin, 23px);
+  line-height: 1.2;
+  text-align: center;
+}
+
+html.simplified-font #mood-caption {
+  color: var(--mood-text);
+}
+
+.slide-in {
+  animation: moodSlideIn 0.55s cubic-bezier(0.22, 0.8, 0.35, 1) both;
+}
+
+.fade-in {
+  animation: moodFadeIn 0.35s both;
+}
+
+@keyframes moodSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(110vw);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes moodFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+#new-indicator {
+  position: fixed;
+  top: max(2vh, env(safe-area-inset-top, 0px));
+  right: max(2vw, env(safe-area-inset-right, 0px));
+  z-index: 1000;
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  max-width: calc(100vw - 4vw);
+  box-sizing: border-box;
+  padding: 10px 18px;
+  column-gap: 8px;
+  row-gap: 2px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #ffe680, #e6bc45);
+  color: #272112;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+  opacity: 0;
+  pointer-events: none;
+  user-select: none;
+}
+
+#new-symbol {
+  grid-area: 1 / 1;
+  font-family: Arial, sans-serif;
+  font-size: clamp(16px, 2vw, 22px);
+  line-height: 1;
+}
+
+#new-label {
+  grid-area: 1 / 2;
+  font-size: clamp(14px, 2vw, 20px);
+  line-height: 1;
+  letter-spacing: 1px;
+}
+
+#new-counter {
+  grid-area: 2 / 2;
+  font-family: var(--mood-caption-font);
+  font-size: clamp(10px, 1.2vw, 13px);
+  line-height: 1;
+  text-align: center;
+  letter-spacing: 0.3px;
+  opacity: 0.8;
+}
+
+#viewed-count {
+  display: inline-block;
+}
+
+#new-indicator.show {
+  animation: moodNewIndicator 2.1s ease forwards;
+}
+
+#viewed-count.increment {
+  animation: moodCountIncrement 0.5s ease-out forwards;
+}
+
+@keyframes moodNewIndicator {
+  0% { opacity: 0; transform: translateY(-12px) scale(0.8); }
+  15% { opacity: 1; transform: translateY(0) scale(1.08); }
+  25%, 78% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-8px) scale(0.95); }
+}
+
+@keyframes moodCountIncrement {
+  0% { opacity: 0; transform: translateY(7px) scale(0.85); }
+  55% { opacity: 1; transform: translateY(-2px) scale(1.18); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+#collection-complete-star {
+  position: fixed;
+  top: max(2vh, env(safe-area-inset-top, 0px));
+  right: max(2vw, env(safe-area-inset-right, 0px));
+  z-index: 900;
+  color: black;
+  font-family: Arial, sans-serif;
+  font-size: 5vh;
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+}
+
+#collection-complete-overlay,
+#mood-error-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.62);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+#mood-error-overlay {
+  z-index: 3000;
+}
+
+#collection-complete-card,
+#mood-error-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+#collection-complete-card {
+  width: min(360px, calc(100vw - 48px));
+  box-sizing: border-box;
+  padding: 28px 24px 24px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #ffe680, #e6bc45);
+  color: #272112;
+  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.35);
+}
+
+#collection-complete-symbol {
+  margin-bottom: 8px;
+  font-family: Arial, sans-serif;
+  font-size: 48px;
+  line-height: 1;
+}
+
+#collection-complete-title {
+  margin: 0 0 20px;
+  font-size: clamp(22px, 6vw, 32px);
+  font-weight: normal;
+  letter-spacing: 1px;
+}
+
+#collection-continue-button,
+#mood-retry-button {
+  padding: 10px 22px;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(39, 33, 18, 0.86);
+  color: white;
+  font: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+#mood-error-content {
+  color: white;
+}
+
+#mood-error-content p {
+  max-width: 460px;
+  margin: 0 0 14px;
+  font-size: clamp(14px, 3.5vw, 18px);
+}
+
+#mood-retry-button {
+  background: rgba(0, 0, 0, 0.78);
+}
+
+#collection-continue-button:hover,
+#collection-continue-button:focus-visible,
+#mood-retry-button:hover,
+#mood-retry-button:focus-visible {
+  filter: brightness(1.15);
+}
+
+[hidden] {
+  display: none !important;
+}
+
+html.reduced-motion #mood-meter-fill {
+  transition: none;
+}
+
+html.reduced-motion #new-indicator.show {
+  animation: moodNewIndicatorReduced 2.1s linear forwards;
+}
+
+html.reduced-motion #viewed-count.increment {
+  animation: moodCountIncrementReduced 0.5s linear forwards;
+}
+
+@keyframes moodNewIndicatorReduced {
+  0%, 100% { opacity: 0; }
+  15%, 78% { opacity: 1; }
+}
+
+@keyframes moodCountIncrementReduced {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (max-height: 620px) {
+  #mood-page {
+    padding-top: calc(max(1vh, env(safe-area-inset-top, 0px)) + 52px);
+    gap: 4px;
+  }
+
+  #mood-meter {
+    flex-basis: 86px;
+  }
+
+  #mood-header h1 {
+    font-size: clamp(30px, 9vmin, 42px);
+  }
+
+  #mood-caption {
+    font-size: clamp(14px, 4vmin, 18px);
+  }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  #mood-page {
+    display: grid;
+    grid-template-columns: minmax(190px, 0.75fr) minmax(0, 1.25fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    align-items: center;
+    column-gap: clamp(16px, 4vw, 40px);
+  }
+
+  #mood-header {
+    grid-area: 1 / 1;
+  }
+
+  #mood-meter {
+    grid-area: 2 / 1;
+    width: min(35vw, 270px);
+    justify-self: center;
+  }
+
+  #mood-figure {
+    grid-area: 1 / 2 / 3 / 3;
+    width: 100%;
+    height: 100%;
+  }
+}
