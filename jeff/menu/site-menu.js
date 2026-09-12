@@ -18,6 +18,7 @@
   const MENU_LINKS = [
     { label: "Meet Jeff", href: "/jeff/", required: 0, hidden: false },
     { label: "Jeff Gallery", href: "/jeff/gallery", required: 5, hidden: false },
+    { label: "Jeff's Mood", href: "/jeff/mood", required: 15, hidden: false },
     { label: "Jeff's FAQ", href: "/jeff/faq", required: 25, hidden: true },
     { label: "Help Jeff?", href: "/jeff/help", required: 50, hidden: true },
     { label: "Jeff's Mailbox", href: "/jeff/contact", required: 100, hidden: true },
