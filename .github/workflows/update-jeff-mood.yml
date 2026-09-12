@@ -2,10 +2,9 @@ name: Update Jeff's mood
 
 on:
   schedule:
-    - cron: "30 4 * * *"
-      timezone: "America/New_York"
+    - cron: "*/15 * * * *"
   workflow_dispatch:
-
+  
 permissions:
   contents: write
 
