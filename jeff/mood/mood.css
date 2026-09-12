@@ -65,9 +65,19 @@ body {
   line-height: 1.15;
 }
 
+#mood-summary {
+  display: flex;
+  flex: 0 1 clamp(112px, 25vh, 228px);
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  min-height: 100px;
+  gap: clamp(2px, 0.6vh, 8px);
+}
+
 #mood-meter {
   position: relative;
-  flex: 0 1 clamp(92px, 22vh, 205px);
+  flex: 1 1 auto;
   width: min(64vw, 360px);
   min-height: 82px;
   aspect-ratio: 24 / 13;
@@ -133,6 +143,17 @@ body {
     1px 1px 0 black;
 }
 
+#mood-timestamp {
+  flex: 0 0 auto;
+  max-width: min(90vw, 680px);
+  margin: 0;
+  color: #343434;
+  font-family: var(--mood-caption-font);
+  font-size: clamp(12px, 2vmin, 17px);
+  line-height: 1.15;
+  text-align: center;
+}
+
 #mood-figure {
   display: flex;
   flex: 1 1 auto;
@@ -172,7 +193,8 @@ body {
   text-align: center;
 }
 
-html.simplified-font #mood-caption {
+html.simplified-font #mood-caption,
+html.simplified-font #mood-timestamp {
   color: var(--mood-text);
 }
 
@@ -377,8 +399,13 @@ html.reduced-motion #viewed-count.increment {
     gap: 4px;
   }
 
+  #mood-summary {
+    flex-basis: 104px;
+    min-height: 94px;
+  }
+
   #mood-meter {
-    flex-basis: 86px;
+    min-height: 70px;
   }
 
   #mood-header h1 {
@@ -403,10 +430,15 @@ html.reduced-motion #viewed-count.increment {
     grid-area: 1 / 1;
   }
 
-  #mood-meter {
+  #mood-summary {
     grid-area: 2 / 1;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+  }
+
+  #mood-meter {
     width: min(35vw, 270px);
-    justify-self: center;
   }
 
   #mood-figure {
