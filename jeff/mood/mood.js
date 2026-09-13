@@ -6,7 +6,11 @@
   const RECENT_IMAGE_LIMIT = 10;
   const ROOT_PAGE = "/jeff/";
   const MOOD_TIME_ZONE = "America/New_York";
-  const MOOD_HOURS = [0, 3, 6, 9, 12, 15, 18, 21];
+  const MOOD_INTERVAL = 3
+  const MOOD_HOURS = Array.from(
+  { length: 24 / MOOD_INTERVAL },
+  (_, index) => index * MOOD_INTERVAL
+);
   const MOOD_COUNT = 20;
   const MONTH_NAMES = [
     "January", "February", "March", "April", "May", "June",
@@ -179,7 +183,7 @@
   function getMoodPeriod(now) {
     const current = getEasternParts(now);
     const dateParts = { year: current.year, month: current.month, day: current.day };
-    const periodHour = Math.floor(current.hour / 4) * 4;
+    const periodHour = Math.floor(current.hour / MOOD_INTERVAL) * MOOD_INTERVAL;
     const period = { ...dateParts, hour: periodHour };
     const moodIndexes = getDayMoodIndexes(dateParts);
     const previousDate = shiftCalendarDate(dateParts, -1);
@@ -194,7 +198,7 @@
     return {
       ...period,
       seed: makeMoodSeed(period),
-      mood: (moodIndexes[periodHour / 4] + 1) * 5,
+      mood: (moodIndexes[periodHour / MOOD_INTERVAL] + 1) * 5,
     };
   }
 
@@ -217,12 +221,12 @@
 
     for (let minute = 0; minute < 360; minute += 1, candidate += 60000) {
       const parts = getEasternParts(new Date(candidate));
-      if (parts.minute === 0 && parts.hour % 4 === 0) {
+      if (parts.minute === 0 && parts.hour % MOOD_INTERVAL === 0) {
         return candidate - now.getTime();
       }
     }
 
-    return 4 * 60 * 60 * 1000;
+    return MOOD_INTERVAL * 60 * 60 * 1000;
   }
 
   function scheduleMoodRefresh(now) {
