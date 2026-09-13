@@ -36,31 +36,39 @@
 
   <body>
     <main id="mood-page" aria-busy="true">
-      <header id="mood-header">
-        <h1>Jeff's Mood</h1>
-        <p>How's Jeff feeling right now?</p>
-      </header>
+      <div id="mood-overview">
+        <header id="mood-header">
+          <h1>Jeff's Mood</h1>
+          <p>How's Jeff feeling right now?</p>
+        </header>
 
-      <section id="mood-summary" aria-label="Jeff's current mood">
-        <div id="mood-meter" role="img" aria-label="Loading Jeff's current mood">
-          <svg viewBox="0 0 240 130" aria-hidden="true">
-            <path class="mood-meter-track" d="M 20 115 A 100 100 0 0 1 220 115" pathLength="100" />
-            <path
-              id="mood-meter-outline"
-              d="M 20 115 A 100 100 0 0 1 220 115"
-              pathLength="100"
-            />
-            <path
-              id="mood-meter-fill"
-              d="M 20 115 A 100 100 0 0 1 220 115"
-              pathLength="100"
-            />
-          </svg>
-          <output id="mood-value" aria-hidden="true">--%</output>
-        </div>
+        <section id="mood-summary" aria-label="Jeff's current mood">
+          <div id="mood-meter" role="img" aria-label="Loading Jeff's current mood">
+            <svg viewBox="0 0 240 170" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+              <path
+                class="mood-meter-track"
+                d="M 29.369 157.262 A 100 100 0 1 1 210.631 157.262"
+                pathLength="100"
+              />
+              <path
+                id="mood-meter-outline"
+                d="M 29.369 157.262 A 100 100 0 1 1 210.631 157.262"
+                pathLength="100"
+              />
+              <path
+                id="mood-meter-fill"
+                d="M 29.369 157.262 A 100 100 0 1 1 210.631 157.262"
+                pathLength="100"
+              />
+              <text id="mood-value" x="120" y="115" text-anchor="middle" dominant-baseline="middle">
+                --%
+              </text>
+            </svg>
+          </div>
 
-        <p id="mood-timestamp" hidden></p>
-      </section>
+          <p id="mood-timestamp" hidden></p>
+        </section>
+      </div>
 
       <figure id="mood-figure" hidden>
         <div id="mood-image-stage">
