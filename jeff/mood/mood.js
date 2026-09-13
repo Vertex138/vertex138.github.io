@@ -6,7 +6,7 @@
   const RECENT_IMAGE_LIMIT = 10;
   const ROOT_PAGE = "/jeff/";
   const MOOD_TIME_ZONE = "America/New_York";
-  const MOOD_HOURS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23];
+  const MOOD_HOURS = [0, 3, 6, 9, 12, 15, 18, 21];
   const MOOD_COUNT = 20;
   const MONTH_NAMES = [
     "January", "February", "March", "April", "May", "June",
