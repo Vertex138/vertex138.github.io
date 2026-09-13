@@ -6,7 +6,7 @@
   const RECENT_IMAGE_LIMIT = 10;
   const ROOT_PAGE = "/jeff/";
   const MOOD_TIME_ZONE = "America/New_York";
-  const MOOD_INTERVAL = 3
+  const MOOD_INTERVAL = 3;
   const MOOD_HOURS = Array.from(
   { length: 24 / MOOD_INTERVAL },
   (_, index) => index * MOOD_INTERVAL
@@ -190,7 +190,7 @@
     const previousDayIndexes = getDayMoodIndexes(previousDate);
 
     // Swapping the first two values prevents a repeat across midnight while
-    // preserving six unique moods within every day.
+    // preserving eight unique moods within every day.
     if (moodIndexes[0] === previousDayIndexes[previousDayIndexes.length - 1]) {
       [moodIndexes[0], moodIndexes[1]] = [moodIndexes[1], moodIndexes[0]];
     }
