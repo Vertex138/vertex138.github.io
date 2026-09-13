@@ -31,24 +31,38 @@ body {
 }
 
 #mood-page {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  display: grid;
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  justify-items: center;
   width: 100%;
   height: 100vh;
   height: 100dvh;
   box-sizing: border-box;
   padding:
-    calc(max(2vh, env(safe-area-inset-top, 0px)) + clamp(58px, 8vh, 82px))
+    0
     max(16px, env(safe-area-inset-right, 0px))
-    max(12px, env(safe-area-inset-bottom, 0px))
+    0
     max(16px, env(safe-area-inset-left, 0px));
-  gap: clamp(6px, 1.2vh, 14px);
   overflow: hidden;
 }
 
+#mood-overview {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  justify-items: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  box-sizing: border-box;
+  padding:
+    calc(var(--menu-edge-top) + var(--menu-toggle-size) + 8px)
+    0
+    clamp(6px, 1.2vh, 14px);
+  gap: clamp(6px, 1.2vh, 14px);
+}
+
 #mood-header {
-  flex: 0 0 auto;
+  min-width: 0;
   text-align: center;
 }
 
@@ -66,21 +80,21 @@ body {
 }
 
 #mood-summary {
-  display: flex;
-  flex: 0 1 clamp(112px, 25vh, 228px);
-  flex-direction: column;
-  align-items: center;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  justify-items: center;
   width: 100%;
-  min-height: 100px;
+  min-width: 0;
+  min-height: 0;
   gap: clamp(2px, 0.6vh, 8px);
 }
 
 #mood-meter {
-  position: relative;
-  flex: 1 1 auto;
-  width: min(64vw, 360px);
-  min-height: 82px;
-  aspect-ratio: 24 / 13;
+  width: 100%;
+  max-width: 420px;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
   visibility: hidden;
   opacity: 0;
 }
@@ -94,7 +108,6 @@ body {
   display: block;
   width: 100%;
   height: 100%;
-  overflow: visible;
 }
 
 .mood-meter-track,
@@ -126,26 +139,16 @@ body {
 }
 
 #mood-value {
-  position: absolute;
-  left: 50%;
-  bottom: 2%;
-  transform: translateX(-50%);
-  color: var(--mood-color);
+  fill: var(--mood-color);
+  stroke: black;
+  stroke-width: 1;
+  paint-order: stroke fill;
   font-family: var(--mood-caption-font);
-  font-size: clamp(25px, 6vmin, 48px);
-  line-height: 1;
-  white-space: nowrap;
-  -webkit-text-stroke: 1px black;
-  text-shadow:
-    -1px -1px 0 black,
-    1px -1px 0 black,
-    -1px 1px 0 black,
-    1px 1px 0 black;
+  font-size: 50px;
 }
 
 #mood-timestamp {
-  flex: 0 0 auto;
-  max-width: min(90vw, 680px);
+  max-width: min(100%, 680px);
   margin: 0;
   color: #343434;
   font-family: var(--mood-caption-font);
@@ -156,12 +159,15 @@ body {
 
 #mood-figure {
   display: flex;
-  flex: 1 1 auto;
   flex-direction: column;
   align-items: center;
   width: min(92vw, 900px);
+  max-width: 100%;
+  min-width: 0;
   min-height: 0;
+  box-sizing: border-box;
   margin: 0;
+  padding: clamp(6px, 1.2vh, 14px) 0 max(12px, env(safe-area-inset-bottom, 0px));
   gap: clamp(7px, 1.3vh, 14px);
 }
 
@@ -190,7 +196,8 @@ body {
 
 #mood-caption {
   flex: 0 0 auto;
-  max-width: min(92vw, 760px);
+  max-width: min(100%, 760px);
+  overflow-wrap: anywhere;
   color: #343434;
   font-family: var(--mood-caption-font);
   font-size: clamp(16px, 2.8vmin, 23px);
@@ -399,22 +406,25 @@ html.reduced-motion #viewed-count.increment {
 }
 
 @media (max-height: 620px) {
-  #mood-page {
-    padding-top: calc(max(1vh, env(safe-area-inset-top, 0px)) + 52px);
+  #mood-overview {
+    padding-bottom: 4px;
     gap: 4px;
   }
 
   #mood-summary {
-    flex-basis: 104px;
-    min-height: 94px;
-  }
-
-  #mood-meter {
-    min-height: 70px;
+    gap: 2px;
   }
 
   #mood-header h1 {
-    font-size: clamp(30px, 9vmin, 42px);
+    font-size: clamp(28px, 7vmin, 42px);
+  }
+
+  #mood-header p {
+    font-size: clamp(14px, 2.5vmin, 17px);
+  }
+
+  #mood-timestamp {
+    font-size: 12px;
   }
 
   #mood-caption {
@@ -422,33 +432,12 @@ html.reduced-motion #viewed-count.increment {
   }
 }
 
-@media (orientation: landscape) and (max-height: 500px) {
-  #mood-page {
-    display: grid;
-    grid-template-columns: minmax(190px, 0.75fr) minmax(0, 1.25fr);
-    grid-template-rows: auto minmax(0, 1fr);
-    align-items: center;
-    column-gap: clamp(16px, 4vw, 40px);
+@media (orientation: landscape) and (max-height: 620px) {
+  #mood-overview {
+    padding-top: max(8px, env(safe-area-inset-top, 0px));
   }
 
   #mood-header {
-    grid-area: 1 / 1;
-  }
-
-  #mood-summary {
-    grid-area: 2 / 1;
-    width: 100%;
-    height: 100%;
-    min-height: 0;
-  }
-
-  #mood-meter {
-    width: min(35vw, 270px);
-  }
-
-  #mood-figure {
-    grid-area: 1 / 2 / 3 / 3;
-    width: 100%;
-    height: 100%;
+    max-width: calc(100% - 2 * (var(--menu-edge-left) + var(--menu-toggle-size) + 8px));
   }
 }
