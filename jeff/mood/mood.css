@@ -141,7 +141,7 @@ body {
 #mood-value {
   fill: var(--mood-color);
   stroke: black;
-  stroke-width: 1;
+  stroke-width: 3;
   paint-order: stroke fill;
   font-family: var(--mood-caption-font);
   font-size: 50px;
