@@ -8,10 +8,9 @@
   const MOOD_TIME_ZONE = "America/New_York";
   const MOOD_INTERVAL = 3;
   const MOOD_HOURS = Array.from(
-  { length: 24 / MOOD_INTERVAL },
-  (_, index) => index * MOOD_INTERVAL
-);
-  const MOOD_COUNT = 20;
+    { length: 24 / MOOD_INTERVAL },
+    (_, index) => index * MOOD_INTERVAL,
+  );
   const MONTH_NAMES = [
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December",
@@ -30,8 +29,7 @@
     timeZoneName: "short",
   });
   const SOURCES = {
-    captions: "/jeff/mood/mood.json",
-    moodImages: "/jeff/mood/mood_img.json",
+    moods: "/jeff/mood/mood.json",
     images: "/jeff/images.json",
   };
   const STORAGE_KEYS = {
@@ -104,14 +102,14 @@
     return response.json();
   }
 
-  async function fetchCaptionsAndTime() {
-    const url = new URL(SOURCES.captions, window.location.href);
+  async function fetchMoodsAndTime() {
+    const url = new URL(SOURCES.moods, window.location.href);
     const cacheKey = window.crypto?.randomUUID?.() || Math.random().toString(36).slice(2);
     url.searchParams.set("_clock", cacheKey);
 
     const response = await fetch(url, { cache: "no-store" });
     if (!response.ok) {
-      throw new Error(`Could not load ${SOURCES.captions}: ${response.status}`);
+      throw new Error(`Could not load ${SOURCES.moods}: ${response.status}`);
     }
 
     const dateHeader = response.headers.get("Date");
@@ -122,7 +120,7 @@
     }
 
     return {
-      captions: await response.json(),
+      moods: await response.json(),
       now: Number.isNaN(serverTime.getTime()) ? new Date() : serverTime,
     };
   }
@@ -164,41 +162,63 @@
     };
   }
 
-  function getDayMoodIndexes(dateParts) {
+  function getDayMoodIndexes(dateParts, count) {
+    if (count === 1) {
+      return MOOD_HOURS.map(() => 0);
+    }
     const used = new Set();
+    let previous = null;
 
     return MOOD_HOURS.map((hour) => {
-      const seed = makeMoodSeed({ ...dateParts, hour });
-      let index = hashSeed(seed) % MOOD_COUNT;
-
-      while (used.has(index)) {
-        index = (index + 1) % MOOD_COUNT;
+      if (used.size === count) {
+        used.clear();
+        used.add(previous);
       }
-
+      const seed = makeMoodSeed({ ...dateParts, hour });
+      const options = Array.from({ length: count }, (_, index) => index)
+        .filter((index) => !used.has(index));
+      const index = options[hashSeed(seed) % options.length];
       used.add(index);
+      previous = index;
       return index;
     });
   }
 
-  function getMoodPeriod(now) {
+  function getMoodPeriod(now, entries) {
     const current = getEasternParts(now);
     const dateParts = { year: current.year, month: current.month, day: current.day };
     const periodHour = Math.floor(current.hour / MOOD_INTERVAL) * MOOD_INTERVAL;
     const period = { ...dateParts, hour: periodHour };
-    const moodIndexes = getDayMoodIndexes(dateParts);
-    const previousDate = shiftCalendarDate(dateParts, -1);
-    const previousDayIndexes = getDayMoodIndexes(previousDate);
+    const count = entries.length;
+    let index = 0;
 
-    // Swapping the first two values prevents a repeat across midnight while
-    // preserving eight unique moods within every day.
-    if (moodIndexes[0] === previousDayIndexes[previousDayIndexes.length - 1]) {
-      [moodIndexes[0], moodIndexes[1]] = [moodIndexes[1], moodIndexes[0]];
+    if (count === 2) {
+      // With two entries, alternating is the only way to avoid repeats.
+      const calendarTime = Date.UTC(current.year, current.month - 1, current.day, periodHour);
+      index = Math.floor(calendarTime / (MOOD_INTERVAL * 3600000)) % 2;
+    } else if (count > 2) {
+      const moodIndexes = getDayMoodIndexes(dateParts, count);
+      const previousDayIndexes = getDayMoodIndexes(shiftCalendarDate(dateParts, -1), count);
+      const previousLast = previousDayIndexes[previousDayIndexes.length - 1];
+
+      if (moodIndexes[0] === previousLast) {
+        if (count >= MOOD_HOURS.length && MOOD_HOURS.length > 2) {
+          [moodIndexes[0], moodIndexes[1]] = [moodIndexes[1], moodIndexes[0]];
+        } else {
+          // Change only the first slot so the daily boundary stays deterministic.
+          const options = Array.from({ length: count }, (_, value) => value)
+            .filter((value) => value !== previousLast && value !== moodIndexes[1]);
+          const firstSeed = makeMoodSeed({ ...dateParts, hour: 0 });
+          moodIndexes[0] = options[hashSeed(firstSeed) % options.length];
+        }
+      }
+      index = moodIndexes[periodHour / MOOD_INTERVAL];
     }
 
     return {
       ...period,
       seed: makeMoodSeed(period),
-      mood: (moodIndexes[periodHour / MOOD_INTERVAL] + 1) * 5,
+      ...entries[index],
     };
   }
 
@@ -234,15 +254,31 @@
     moodRefreshTimeout = setTimeout(initializeMood, millisecondsUntilNextMood(now) + 1500);
   }
 
-  function getMappedValue(map, mood, name) {
+  function getMoodEntries(map) {
     if (!isPlainObject(map)) {
-      throw new Error(`${name} must contain a JSON object.`);
+      throw new Error("mood.json must contain a JSON object.");
     }
-    const value = map[String(mood)];
-    if (typeof value !== "string" || value.trim() === "") {
-      throw new Error(`${name} does not contain a valid entry for ${mood}.`);
+    const entries = Object.entries(map).map(([rawMood, entry]) => {
+      const mood = Number(rawMood);
+      if (rawMood.trim() === "" || !Number.isFinite(mood) || mood < 0 || mood > 100) {
+        throw new Error(`Invalid mood percentage: "${rawMood}". Use a number from 0 to 100.`);
+      }
+      if (
+        !isPlainObject(entry) ||
+        typeof entry.caption !== "string" ||
+        entry.caption.trim() === "" ||
+        !["string", "number"].includes(typeof entry.img) ||
+        !isValidImageId(Number(entry.img))
+      ) {
+        throw new Error(`Mood ${rawMood} needs a caption and an image ID from 1 to ${TOTAL_IMAGE_GOAL}.`);
+      }
+      return { mood, caption: entry.caption.trim(), imageId: Number(entry.img) };
+    }).sort((a, b) => a.mood - b.mood);
+
+    if (entries.length === 0 || new Set(entries.map((entry) => entry.mood)).size !== entries.length) {
+      throw new Error("mood.json must contain at least one entry with unique percentages.");
     }
-    return value.trim();
+    return entries;
   }
 
   function hsvToRgb(hue, saturation, value) {
@@ -426,24 +462,20 @@
     document.getElementById("mood-page").setAttribute("aria-busy", "true");
 
     try {
-      const [{ captions, now }, moodImages, images] = await Promise.all([
-        fetchCaptionsAndTime(),
-        fetchJson(SOURCES.moodImages),
+      const [{ moods, now }, images] = await Promise.all([
+        fetchMoodsAndTime(),
         fetchJson(SOURCES.images),
       ]);
-      const period = getMoodPeriod(now);
-      const { mood } = period;
+      const period = getMoodPeriod(now, getMoodEntries(moods));
+      const { mood, caption, imageId } = period;
 
       if (period.seed === activeMoodSeed) {
         scheduleMoodRefresh(now);
         return;
       }
 
-      const caption = getMappedValue(captions, mood, "mood.json");
-      const imageId = Number(getMappedValue(moodImages, mood, "mood_img.json"));
-
-      if (!isValidImageId(imageId) || !isPlainObject(images)) {
-        throw new Error("The daily mood image mapping is invalid.");
+      if (!isPlainObject(images)) {
+        throw new Error("images.json must map numerical IDs to filenames.");
       }
       const filename = images[String(imageId)];
       if (typeof filename !== "string" || filename.trim() === "") {
