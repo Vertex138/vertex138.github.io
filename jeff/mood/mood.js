@@ -44,6 +44,14 @@
   let activeMoodSeed = null;
   let loading = false;
 
+  // Temporary keyboard previews; keep this copy out of the production archive.
+  let debugMode = false;
+  let debugEntries = [];
+  let debugImages = null;
+  let debugIndex = -1;
+  let debugPeriod = null;
+  let debugNow = null;
+
   function isValidImageId(value) {
     return Number.isInteger(value) && value >= 1 && value <= TOTAL_IMAGE_GOAL;
   }
@@ -454,7 +462,7 @@
   }
 
   async function initializeMood() {
-    if (loading) {
+    if (loading || debugMode) {
       return;
     }
     loading = true;
@@ -466,7 +474,8 @@
         fetchMoodsAndTime(),
         fetchJson(SOURCES.images),
       ]);
-      const period = getMoodPeriod(now, getMoodEntries(moods));
+      const entries = getMoodEntries(moods);
+      const period = getMoodPeriod(now, entries);
       const { mood, caption, imageId } = period;
 
       if (period.seed === activeMoodSeed) {
@@ -477,6 +486,12 @@
       if (!isPlainObject(images)) {
         throw new Error("images.json must map numerical IDs to filenames.");
       }
+      debugEntries = entries;
+      debugImages = images;
+      debugPeriod = period;
+      debugNow = now;
+      debugIndex = entries.findIndex((entry) => entry.mood === mood);
+
       const filename = images[String(imageId)];
       if (typeof filename !== "string" || filename.trim() === "") {
         throw new Error(`images.json does not contain image ${imageId}.`);
@@ -504,6 +519,70 @@
     }
   }
 
+  async function displayDebugMood(index) {
+    if (loading || debugEntries.length === 0) {
+      return;
+    }
+    loading = true;
+    debugMode = true;
+    debugIndex = index;
+    clearTimeout(moodRefreshTimeout);
+    clearTimeout(countAnimationTimeout);
+    const indicator = document.getElementById("new-indicator");
+    indicator.classList.remove("show");
+    indicator.setAttribute("aria-hidden", "true");
+    hideError();
+    document.getElementById("mood-page").setAttribute("aria-busy", "true");
+
+    try {
+      const entry = debugEntries[index];
+      const filename = debugImages[String(entry.imageId)];
+      if (typeof filename !== "string" || filename.trim() === "") {
+        throw new Error(`images.json does not contain image ${entry.imageId}.`);
+      }
+      const source = `/jeff/images/${encodeURIComponent(filename.trim())}`;
+      const preloaded = await preloadImage(source);
+      displayMeter(entry.mood, debugPeriod, debugNow);
+      document.getElementById("mood-timestamp").textContent =
+        `Debug preview · ${index + 1} / ${debugEntries.length} · ← / →`;
+      document.getElementById("mood-meter").setAttribute(
+        "aria-label", `Debug mood preview: ${entry.mood} percent`,
+      );
+      const image = document.getElementById("mood-image");
+      image.src = preloaded.src;
+      image.alt = `Jeff illustrating the previewed ${entry.mood}% mood`;
+      document.getElementById("mood-caption").textContent = entry.caption;
+      document.getElementById("mood-figure").hidden = false;
+      // Previews deliberately do not record discoveries or change saved progress.
+    } catch (error) {
+      console.error(error);
+      showError();
+    } finally {
+      loading = false;
+      document.getElementById("mood-page").setAttribute("aria-busy", "false");
+    }
+  }
+
+  function handleDebugKey(event) {
+    if (
+      !["ArrowLeft", "ArrowRight"].includes(event.key) ||
+      event.defaultPrevented || event.repeat ||
+      event.altKey || event.ctrlKey || event.metaKey || event.shiftKey ||
+      loading || debugEntries.length === 0 ||
+      document.documentElement.classList.contains("site-menu-open") ||
+      document.querySelector('[role="dialog"]:not([hidden])') ||
+      event.target?.closest?.(
+        'input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"], [role="slider"]',
+      )
+    ) {
+      return;
+    }
+    event.preventDefault();
+    const direction = event.key === "ArrowRight" ? 1 : -1;
+    const index = (debugIndex + direction + debugEntries.length) % debugEntries.length;
+    displayDebugMood(index);
+  }
+
   function dismissCompletion() {
     saveCompletionAcknowledged(true);
     document.getElementById("collection-complete-overlay").hidden = true;
@@ -518,7 +597,14 @@
       }
     });
     document.getElementById("collection-continue-button").addEventListener("click", dismissCompletion);
-    document.getElementById("mood-retry-button").addEventListener("click", initializeMood);
+    document.getElementById("mood-retry-button").addEventListener("click", () => {
+      if (debugMode) {
+        displayDebugMood(debugIndex);
+      } else {
+        initializeMood();
+      }
+    });
+    document.addEventListener("keydown", handleDebugKey);
     initializeMood();
   }, { once: true });
 
