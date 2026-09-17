@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" style="display: none">
   <head>
     <meta charset="UTF-8" />
     <meta
@@ -7,15 +7,8 @@
       content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
 
-    <script>
-      try {
-        if (localStorage.getItem("fortuneIntroViewed") === "true") {
-          document.documentElement.classList.add("fortune-revisit");
-        }
-      } catch (error) {
-        // If storage is unavailable, use the first-visit presentation.
-      }
-    </script>
+    <!-- Check access immediately; Fortune initializes after the DOM and shared menu are ready. -->
+    <script src="/jeff/fortune/fortune.js"></script>
 
     <title>Jeff's Fortune</title>
 
@@ -44,7 +37,6 @@
     <link rel="stylesheet" href="/jeff/fortune/fortune.css" />
 
     <script src="/jeff/menu/site-menu.js" defer></script>
-    <script src="/jeff/fortune/fortune.js" defer></script>
   </head>
 
   <body>
