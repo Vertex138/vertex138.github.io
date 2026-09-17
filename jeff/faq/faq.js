@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const FAQ_UNLOCK_REQUIREMENT = 25;
+  const FAQ_UNLOCK_REQUIREMENT = 40;
   const TOTAL_IMAGE_GOAL = 150;
   const VIEWED_IMAGES_KEY = "viewedImages";
   const ROOT_PAGE = "/jeff/";
