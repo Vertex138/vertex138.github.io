@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+
+    <script>
+      try {
+        if (localStorage.getItem("fortuneIntroViewed") === "true") {
+          document.documentElement.classList.add("fortune-revisit");
+        }
+      } catch (error) {
+        // If storage is unavailable, use the first-visit presentation.
+      }
+    </script>
+
+    <title>Jeff's Fortune</title>
+
+    <link rel="icon" href="/jeff/icons/favicon.ico" sizes="any" />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/jeff/icons/favicon-32x32.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="/jeff/icons/apple-touch-icon.png"
+    />
+
+    <link
+      rel="preload"
+      href="/jeff/fonts/MatchaMint.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+
+    <link rel="stylesheet" href="/jeff/menu/site-menu.css" />
+    <link rel="stylesheet" href="/jeff/fortune/fortune.css" />
+
+    <script src="/jeff/menu/site-menu.js" defer></script>
+    <script src="/jeff/fortune/fortune.js" defer></script>
+  </head>
+
+  <body>
+    <main id="fortune-page" aria-busy="true">
+      <section id="fortune-stage" aria-label="Jeff's fortune-telling room">
+        <div id="fortune-scene">
+          <img
+            id="layer-bg"
+            class="fortune-layer"
+            data-layer="bg"
+            data-src="/jeff/fortune/bg.png"
+            alt=""
+          />
+          <img
+            id="layer-peek1"
+            class="fortune-layer"
+            data-layer="peek1"
+            data-src="/jeff/fortune/peek1.png"
+            alt=""
+          />
+          <img
+            id="layer-peek2"
+            class="fortune-layer"
+            data-layer="peek2"
+            data-src="/jeff/fortune/peek2.png"
+            alt=""
+          />
+          <img
+            id="layer-peek3"
+            class="fortune-layer"
+            data-layer="peek3"
+            data-src="/jeff/fortune/peek3.png"
+            alt=""
+          />
+          <img
+            id="layer-peek4"
+            class="fortune-layer"
+            data-layer="peek4"
+            data-src="/jeff/fortune/peek4.png"
+            alt=""
+          />
+
+          <div id="fortune-character-group" aria-hidden="true">
+            <img
+              id="layer-jeff"
+              class="fortune-layer"
+              data-layer="jeff"
+              data-src="/jeff/fortune/jeff.png"
+              alt=""
+            />
+            <img
+              id="layer-blink"
+              class="fortune-layer"
+              data-layer="blink"
+              data-src="/jeff/fortune/blink.png"
+              alt=""
+            />
+          </div>
+
+          <div id="fortune-stars" aria-hidden="true"></div>
+
+          <img
+            id="layer-out"
+            class="fortune-layer"
+            data-layer="out"
+            data-src="/jeff/fortune/out.png"
+            alt=""
+          />
+          <img
+            id="layer-fg"
+            class="fortune-layer"
+            data-layer="fg"
+            data-src="/jeff/fortune/fg.png"
+            alt=""
+          />
+          <img
+            id="layer-text1"
+            class="fortune-layer"
+            data-layer="text1"
+            data-src="/jeff/fortune/text1.png"
+            alt=""
+          />
+          <img
+            id="layer-text2"
+            class="fortune-layer"
+            data-layer="text2"
+            data-src="/jeff/fortune/text2.png"
+            alt=""
+          />
+
+          <button
+            id="fortune-card-button"
+            type="button"
+            aria-label="Put away your fortune"
+            hidden
+          >
+            <img id="fortune-card" alt="Your fortune" draggable="false" />
+          </button>
+        </div>
+      </section>
+
+      <p id="fortune-loading" role="status" aria-live="polite">Loading...</p>
+
+      <div id="fortune-error" role="alert" hidden>
+        <p>Jeff couldn't find the stars. Please try again.</p>
+        <button id="fortune-retry-button" type="button">RETRY</button>
+      </div>
+
+      <section id="fortune-controls" aria-label="Fortune controls">
+        <button id="fortune-action-button" type="button" hidden></button>
+
+        <div id="fortune-cooldown" role="timer" aria-live="off" hidden>
+          <span>Return for another fortune later...</span>
+          <strong id="fortune-countdown">06:00:00</strong>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
