@@ -303,7 +303,7 @@
       animation.cancel();
     }
 
-    function startAmbientLoop(task) {
+    function startAmbientLoop(task, minDelay = 3000, maxDelay = 10000) {
       const state = {
         stopping: false,
         wake: null,
@@ -315,7 +315,7 @@
           await new Promise((resolve) => {
             const timer = window.setTimeout(
               resolve,
-              randomBetween(3000, 10000),
+              randomBetween(minDelay, maxDelay),
             );
             state.wake = () => {
               window.clearTimeout(timer);
@@ -390,9 +390,9 @@
 
       if (reducedMotionEnabled()) {
         layers[name].style.transform = "translateX(0)";
-        await fadeLayer(name, 1, 500);
-        await wait(2000);
-        await fadeLayer(name, 0, 500);
+        await fadeLayer(name, 1, 350);
+        await wait(1000);
+        await fadeLayer(name, 0, 350);
         return;
       }
 
@@ -454,7 +454,7 @@
         await stopAmbientLoop();
         await summonJeff();
       });
-      startAmbientLoop(playPeek);
+      startAmbientLoop(playPeek, 2000, 5000);
     }
 
     function createStar(stationary = false) {
@@ -492,7 +492,7 @@
         function frame(now) {
           const elapsed = now - started;
           const progress = Math.min(elapsed / duration, 1);
-          const amplitude = 0.8 + progress * 6;
+          const amplitude = 0.4 + progress * 3;
           const x = Math.sin(elapsed * 0.065) * amplitude;
           const y = Math.cos(elapsed * 0.083) * amplitude * 0.45;
           character.style.transform = `translate3d(${x}px, ${y}px, 0)`;
@@ -522,18 +522,31 @@
     }
 
     async function stationaryStars(duration) {
-      const created = Array.from({ length: 14 }, () => createStar(true));
-      requestAnimationFrame(() =>
-        created.forEach((star) => {
-          star.style.opacity = "1";
-        }),
-      );
-      await wait(duration);
-      created.forEach((star) => {
-        star.style.opacity = "0";
+      const started = performance.now();
+      const created = [];
+
+      for (let index = 0; index < 14; index += 1) {
+        const star = createStar(true);
+        created.push(star);
+        const fadeIn = star.animate([{ opacity: 0 }, { opacity: 1 }], {
+          duration: 100,
+          easing: "linear",
+          fill: "forwards",
+        });
+        await fadeIn.finished;
+        star.style.opacity = "1";
+        fadeIn.cancel();
+      }
+
+      await wait(Math.max(0, duration - (performance.now() - started)));
+      const fadeOut = stars.animate([{ opacity: 1 }, { opacity: 0 }], {
+        duration: 500,
+        easing: "linear",
+        fill: "forwards",
       });
-      await wait(500);
+      await fadeOut.finished;
       created.forEach((star) => star.remove());
+      fadeOut.cancel();
     }
 
     async function performFortuneRitual() {
@@ -541,7 +554,7 @@
       await fadeLayer("blink", 1, 250);
       await wait(1000);
 
-      const duration = randomBetween(5000, 10000);
+      const duration = randomBetween(3000, 5000);
       if (reducedMotionEnabled()) {
         await stationaryStars(duration);
       } else {
