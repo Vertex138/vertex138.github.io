@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const MOOD_UNLOCK_REQUIREMENT = 15;
+  const MOOD_UNLOCK_REQUIREMENT = 20;
   const TOTAL_IMAGE_GOAL = 150;
   const RECENT_IMAGE_LIMIT = 10;
   const ROOT_PAGE = "/jeff/";
