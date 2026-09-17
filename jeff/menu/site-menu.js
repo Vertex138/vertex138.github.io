@@ -13,22 +13,27 @@
     unlockKnown: "menuUnlockKnownLevel",
     unlockPending: "menuUnlockPendingLevel",
     introduction: "introductionAcknowledged",
+    fortuneIntro: "fortuneIntroViewed",
+    fortuneCooldown: "fortuneCooldownUntil",
   };
 
-  const MENU_LINKS = [
-    { label: "Meet Jeff", href: "/jeff/", required: 0, hidden: false },
-    { label: "Jeff Gallery", href: "/jeff/gallery", required: 5, hidden: false },
-    { label: "Jeff's Mood", href: "/jeff/mood", required: 20, hidden: true },
-    { label: "Jeff's FAQ", href: "/jeff/faq", required: 40, hidden: true },
-    { label: "Help Jeff?", href: "/jeff/help", required: 60, hidden: true },
-    { label: "Jeff's Advice", href: "/jeff/advice", required: 80, hidden: true },
-    { label: "Jeff's Mailbox", href: "/jeff/contact", required: 100, hidden: true },
-    { label: "Thank you!", href: "/jeff/thanks", required: 150, hidden: false },
-  ];
+const MENU_LINKS = [
+  { label: "Meet Jeff", href: "/jeff/", required: 0, hidden: false },
+  { label: "Jeff Gallery", href: "/jeff/gallery", required: 5, hidden: false },
+  { label: "Jeff's Mood", href: "/jeff/mood", required: 20, hidden: true },
+  { label: "Jeff's FAQ", href: "/jeff/faq", required: 40, hidden: true },
+  { label: "Help Jeff?", href: "/jeff/help", required: 60, hidden: true },
+  { label: "Jeff's Fortune", href: "/jeff/fortune", required: 80, hidden: true },
+  { label: "Jeff's Mailbox", href: "/jeff/contact", required: 100, hidden: true },
+  { label: "Thank you!", href: "/jeff/thanks", required: 150, hidden: false }, ];
 
-  const UNLOCK_LEVELS = MENU_LINKS.map((link) => link.required).filter((required) => required > 0);
+  const UNLOCK_LEVELS = MENU_LINKS.map((link) => link.required).filter(
+    (required) => required > 0,
+  );
 
-  const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const reducedMotionQuery = window.matchMedia(
+    "(prefers-reduced-motion: reduce)",
+  );
 
   let forceNewReady = !document.getElementById("random-image");
 
@@ -172,9 +177,15 @@
   const menuBackdrop = document.getElementById("site-menu-backdrop");
   const accessibilityButton = document.getElementById("accessibility-button");
   const accessibilityOverlay = document.getElementById("accessibility-overlay");
-  const accessibilityCloseButton = document.getElementById("accessibility-close-button");
-  const reducedMotionSetting = document.getElementById("reduced-motion-setting");
-  const simplifiedFontSetting = document.getElementById("simplified-font-setting");
+  const accessibilityCloseButton = document.getElementById(
+    "accessibility-close-button",
+  );
+  const reducedMotionSetting = document.getElementById(
+    "reduced-motion-setting",
+  );
+  const simplifiedFontSetting = document.getElementById(
+    "simplified-font-setting",
+  );
   const forceNewButton = document.getElementById("force-new-button");
   const clearAllButton = document.getElementById("clear-all-button");
 
@@ -205,9 +216,15 @@
   }
 
   function applyAccessibilitySettings() {
-    const reducedMotion = readStoredBoolean(STORAGE_KEYS.reducedMotion, reducedMotionQuery.matches);
+    const reducedMotion = readStoredBoolean(
+      STORAGE_KEYS.reducedMotion,
+      reducedMotionQuery.matches,
+    );
 
-    const simplifiedFont = readStoredBoolean(STORAGE_KEYS.simplifiedFont, false);
+    const simplifiedFont = readStoredBoolean(
+      STORAGE_KEYS.simplifiedFont,
+      false,
+    );
 
     root.classList.toggle("reduced-motion", reducedMotion);
     root.classList.toggle("simplified-font", simplifiedFont);
@@ -224,7 +241,9 @@
 
   function getViewedImageCount() {
     try {
-      const storedIds = JSON.parse(localStorage.getItem(STORAGE_KEYS.viewed) || "[]");
+      const storedIds = JSON.parse(
+        localStorage.getItem(STORAGE_KEYS.viewed) || "[]",
+      );
 
       if (!Array.isArray(storedIds)) {
         return 0;
@@ -234,7 +253,10 @@
         storedIds
           .map(Number)
           .filter(
-            (imageId) => Number.isInteger(imageId) && imageId >= 1 && imageId <= TOTAL_IMAGE_GOAL,
+            (imageId) =>
+              Number.isInteger(imageId) &&
+              imageId >= 1 &&
+              imageId <= TOTAL_IMAGE_GOAL,
           ),
       ).size;
     } catch (error) {
@@ -293,7 +315,9 @@
   }
 
   function announceNewUnlock(viewedCount) {
-    const unlockedLevels = UNLOCK_LEVELS.filter((required) => viewedCount >= required);
+    const unlockedLevels = UNLOCK_LEVELS.filter(
+      (required) => viewedCount >= required,
+    );
 
     const highestUnlockedLevel = unlockedLevels[unlockedLevels.length - 1] || 0;
 
@@ -315,7 +339,9 @@
       return;
     }
 
-    const unlockedLink = MENU_LINKS.find((link) => link.required === pendingLevel);
+    const unlockedLink = MENU_LINKS.find(
+      (link) => link.required === pendingLevel,
+    );
 
     const noticeWasHidden = unlockNotice.hidden;
 
@@ -344,7 +370,8 @@
 
       link.classList.toggle("is-locked", !unlocked);
 
-      labelElement.textContent = !unlocked && hideLabelWhenLocked ? "? ? ? ? ? ? ?" : label;
+      labelElement.textContent =
+        !unlocked && hideLabelWhenLocked ? "? ? ? ? ? ? ?" : label;
 
       if (unlocked) {
         link.setAttribute("href", link.dataset.href);
@@ -394,7 +421,9 @@
       hideUnlockNotice(true);
 
       requestAnimationFrame(() => {
-        menuPanel.querySelector(".site-menu-item:not([tabindex='-1']):not(:disabled)")?.focus();
+        menuPanel
+          .querySelector(".site-menu-item:not([tabindex='-1']):not(:disabled)")
+          ?.focus();
       });
     } else if (restoreFocus) {
       menuToggle.focus();
@@ -424,7 +453,8 @@
     const focusable = [
       ...(additionalElement ? [additionalElement] : []),
       ...container.querySelectorAll(
-        "a[href]:not([tabindex='-1']), " + "button:not(:disabled), input:not(:disabled)",
+        "a[href]:not([tabindex='-1']), " +
+          "button:not(:disabled), input:not(:disabled)",
       ),
     ].filter((element) => !element.hidden);
 
@@ -445,7 +475,9 @@
   }
 
   function clearAllSavedImageHistory() {
-    const confirmed = window.confirm("Are you sure you want to clear all saved image history?");
+    const confirmed = window.confirm(
+      "Are you sure you want to clear all saved Jeff progress?",
+    );
 
     if (!confirmed) {
       return;
@@ -459,6 +491,8 @@
       localStorage.removeItem(STORAGE_KEYS.unlockKnown);
       localStorage.removeItem(STORAGE_KEYS.unlockPending);
       localStorage.removeItem(STORAGE_KEYS.introduction);
+      localStorage.removeItem(STORAGE_KEYS.fortuneIntro);
+      localStorage.removeItem(STORAGE_KEYS.fortuneCooldown);
       localStorage.removeItem("menuUnlockNoticeLevel");
 
       hideUnlockNotice();
@@ -467,11 +501,11 @@
 
       document.dispatchEvent(new CustomEvent("jeff:history-cleared"));
 
-      window.alert("All saved image history has been cleared.");
+      window.alert("All saved Jeff progress has been cleared.");
     } catch (error) {
-      console.error("Could not clear the saved image history:", error);
+      console.error("Could not clear the saved Jeff progress:", error);
 
-      window.alert("The saved image history could not be cleared.");
+      window.alert("The saved Jeff progress could not be cleared.");
     }
   }
 
@@ -490,7 +524,9 @@
   });
 
   menuPanel.addEventListener("click", (event) => {
-    const lockedLink = event.target.closest("[data-unlock][aria-disabled='true']");
+    const lockedLink = event.target.closest(
+      "[data-unlock][aria-disabled='true']",
+    );
 
     if (lockedLink) {
       event.preventDefault();
@@ -519,7 +555,10 @@
   });
 
   simplifiedFontSetting.addEventListener("change", () => {
-    saveStoredBoolean(STORAGE_KEYS.simplifiedFont, simplifiedFontSetting.checked);
+    saveStoredBoolean(
+      STORAGE_KEYS.simplifiedFont,
+      simplifiedFontSetting.checked,
+    );
 
     applyAccessibilitySettings();
   });
@@ -537,7 +576,9 @@
   forceNewButton.addEventListener("click", () => {
     setMenuOpen(false, false);
 
-    const forceNewEvent = new CustomEvent("jeff:force-new", { cancelable: true });
+    const forceNewEvent = new CustomEvent("jeff:force-new", {
+      cancelable: true,
+    });
 
     if (document.dispatchEvent(forceNewEvent)) {
       const destination = new URL("/jeff/", window.location.origin);
