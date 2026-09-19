@@ -187,7 +187,7 @@
         entries.some(
           ([id, filename]) =>
             !Number.isInteger(Number(id)) ||
-            Number(id) < 1 ||
+            Number(id) < 0 ||
             typeof filename !== "string" ||
             /[/\\]/.test(filename) ||
             !/\.(png|jpe?g|webp|gif|avif)$/i.test(filename),
