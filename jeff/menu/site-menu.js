@@ -15,17 +15,19 @@
     introduction: "introductionAcknowledged",
     fortuneIntro: "fortuneIntroViewed",
     fortuneCooldown: "fortuneCooldownUntil",
+    fortunes: "fortuneState",
   };
 
-const MENU_LINKS = [
-  { label: "Meet Jeff", href: "/jeff/", required: 0, hidden: false },
-  { label: "Jeff Gallery", href: "/jeff/gallery", required: 5, hidden: false },
-  { label: "Jeff's Mood", href: "/jeff/mood", required: 20, hidden: true },
-  { label: "Jeff's FAQ", href: "/jeff/faq", required: 40, hidden: true },
-  { label: "Help Jeff?", href: "/jeff/help", required: 60, hidden: true },
-  { label: "Jeff's Fortune", href: "/jeff/fortune", required: 80, hidden: true },
-  { label: "Jeff's Mailbox", href: "/jeff/contact", required: 100, hidden: true },
-  { label: "Thank you!", href: "/jeff/thanks", required: 150, hidden: false }, ];
+  const MENU_LINKS = [
+    { label: "Meet Jeff", href: "/jeff/", required: 0, hidden: false },
+    { label: "Jeff Gallery", href: "/jeff/gallery", required: 5, hidden: false },
+    { label: "Jeff's Mood", href: "/jeff/mood", required: 20, hidden: true },
+    { label: "Jeff's FAQ", href: "/jeff/faq", required: 40, hidden: true },
+    { label: "Help Jeff?", href: "/jeff/help", required: 60, hidden: true },
+    { label: "Jeff's Fortune", href: "/jeff/fortune", required: 80, hidden: true },
+    { label: "Jeff's Mailbox", href: "/jeff/contact", required: 100, hidden: true},
+    { label: "Thank you!", href: "/jeff/thanks", required: 150, hidden: false },
+  ];
 
   const UNLOCK_LEVELS = MENU_LINKS.map((link) => link.required).filter(
     (required) => required > 0,
@@ -493,6 +495,7 @@ const MENU_LINKS = [
       localStorage.removeItem(STORAGE_KEYS.introduction);
       localStorage.removeItem(STORAGE_KEYS.fortuneIntro);
       localStorage.removeItem(STORAGE_KEYS.fortuneCooldown);
+      localStorage.removeItem(STORAGE_KEYS.fortunes);
       localStorage.removeItem("menuUnlockNoticeLevel");
 
       hideUnlockNotice();
