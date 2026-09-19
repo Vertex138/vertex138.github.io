@@ -8,6 +8,7 @@
     viewed: "viewedImages",
     intro: "fortuneIntroViewed",
     cooldown: "fortuneCooldownUntil",
+    fortunes: "fortuneState",
   };
   const root = document.documentElement;
 
@@ -64,7 +65,9 @@
     }
 
     const COOLDOWN_MS = 6 * 60 * 60 * 1000;
-    const FORTUNE_SOURCE = "/jeff/fortune/fortunes/f_temp.png";
+    const RECENT_FORTUNE_LIMIT = 40;
+    const FORTUNE_DIRECTORY = "/jeff/fortune/fortunes/";
+    const FORTUNE_LIST_SOURCE = "/jeff/fortune/fortunes.json";
     const LAYER_NAMES = [
       "bg",
       "peek1",
@@ -93,6 +96,12 @@
     const actionButton = document.getElementById("fortune-action-button");
     const cooldownPanel = document.getElementById("fortune-cooldown");
     const countdown = document.getElementById("fortune-countdown");
+    const timer = document.getElementById("fortune-timer");
+    const lastFortuneButton = document.getElementById("fortune-last-button");
+    const fortuneOverlay = document.getElementById("fortune-card-overlay");
+    const viewerControls = document.getElementById("fortune-viewer-controls");
+    const saveFortuneButton = document.getElementById("fortune-save-button");
+    const closeFortuneButton = document.getElementById("fortune-close-button");
     const fortuneButton = document.getElementById("fortune-card-button");
     const fortuneCard = document.getElementById("fortune-card");
     const layers = Object.fromEntries(
@@ -109,6 +118,9 @@
     let ambientLoop = null;
     let cooldownInterval = null;
     let blinkVersion = 0;
+    let exitAnimation = Promise.resolve();
+    let displayedFortune = null;
+    let fortuneFiles = [];
 
     function reducedMotionEnabled() {
       return (
@@ -154,9 +166,124 @@
       return readStorage(STORAGE_KEYS.intro) === "true";
     }
 
-    function activeCooldownDeadline() {
-      const deadline = Number(readStorage(STORAGE_KEYS.cooldown));
+    function isFortuneFile(filename) {
+      return typeof filename === "string" && fortuneFiles.includes(filename);
+    }
+
+    async function loadFortuneList() {
+      const response = await fetch(FORTUNE_LIST_SOURCE);
+      if (!response.ok) {
+        throw new Error(`Could not load fortunes.json: ${response.status}`);
+      }
+      const data = await response.json();
+      if (!data || typeof data !== "object" || Array.isArray(data)) {
+        throw new Error(
+          "fortunes.json must map numeric IDs to image filenames.",
+        );
+      }
+      const entries = Object.entries(data);
+      if (
+        !entries.length ||
+        entries.some(
+          ([id, filename]) =>
+            !Number.isInteger(Number(id)) ||
+            Number(id) < 1 ||
+            typeof filename !== "string" ||
+            /[/\\]/.test(filename) ||
+            !/\.(png|jpe?g|webp|gif|avif)$/i.test(filename),
+        )
+      ) {
+        throw new Error(
+          "fortunes.json contains a missing or invalid image filename.",
+        );
+      }
+      fortuneFiles = [
+        ...new Set(
+          entries
+            .sort((a, b) => Number(a[0]) - Number(b[0]))
+            .map(([, filename]) => filename),
+        ),
+      ];
+    }
+
+    function readFortuneState() {
+      let saved;
+      try {
+        saved = JSON.parse(readStorage(STORAGE_KEYS.fortunes) || "null");
+      } catch (error) {
+        console.warn("Could not read saved fortunes:", error);
+      }
+      const last = isFortuneFile(saved?.last) ? saved.last : null;
+      let recent = Array.isArray(saved?.recent)
+        ? [...new Set(saved.recent.filter(isFortuneFile))]
+        : [];
+      if (last !== null) {
+        recent = recent.filter((filename) => filename !== last).concat(last);
+      }
+      return {
+        last,
+        recent: recent.slice(-RECENT_FORTUNE_LIMIT),
+        cooldownUntil: Number.isFinite(saved?.cooldownUntil)
+          ? saved.cooldownUntil
+          : 0,
+      };
+    }
+
+    function activeCooldownDeadline(state = readFortuneState()) {
+      // Honor timers started by the earlier version of this page, too.
+      const legacyDeadline = Number(readStorage(STORAGE_KEYS.cooldown)) || 0;
+      const deadline = Math.max(state.cooldownUntil, legacyDeadline);
       return Number.isFinite(deadline) && deadline > Date.now() ? deadline : 0;
+    }
+
+    function claimFortune() {
+      const state = readFortuneState();
+      if (activeCooldownDeadline(state)) {
+        return null;
+      }
+      if (!fortuneFiles.length) {
+        throw new Error("No fortunes are available in fortunes.json.");
+      }
+      // Leave a choice available while testing with fewer than 41 images.
+      const excludedCount = Math.min(
+        RECENT_FORTUNE_LIMIT,
+        fortuneFiles.length - 1,
+      );
+      const excluded = excludedCount ? state.recent.slice(-excludedCount) : [];
+      const available = fortuneFiles.filter(
+        (filename) => !excluded.includes(filename),
+      );
+      const filename = available[Math.floor(Math.random() * available.length)];
+      const next = {
+        last: filename,
+        recent: [
+          ...state.recent.filter((item) => item !== filename),
+          filename,
+        ].slice(-RECENT_FORTUNE_LIMIT),
+        cooldownUntil: Date.now() + COOLDOWN_MS,
+      };
+
+      // Save all three together, before any animation or image request.
+      // If storage fails, do not reveal an unrecorded fortune.
+      localStorage.setItem(STORAGE_KEYS.fortunes, JSON.stringify(next));
+      return next;
+    }
+
+    function fortuneSource(filename) {
+      return FORTUNE_DIRECTORY + encodeURIComponent(filename);
+    }
+
+    function fortuneDownloadName(filename, date = new Date()) {
+      const timestamp = [
+        date.getFullYear(),
+        date.getMonth() + 1,
+        date.getDate(),
+        date.getHours(),
+      ]
+        .map((part, index) => String(part).padStart(index === 0 ? 4 : 2, "0"))
+        .join("");
+      const extension = filename.split(".").pop().toLowerCase();
+      return `JeffFortune-${timestamp}.${extension}`;
     }
 
     function setSceneDimensions(image) {
@@ -190,7 +317,17 @@
       const viewportHeight =
         window.visualViewport?.height || window.innerHeight;
       const ratio = naturalWidth / naturalHeight;
-      const height = Math.min(viewportHeight * 0.8, viewportWidth / ratio);
+      const controlsHeight = document
+        .getElementById("fortune-controls")
+        .getBoundingClientRect().height;
+      const height = Math.max(
+        0,
+        Math.min(
+          viewportHeight * 0.8,
+          viewportHeight - controlsHeight,
+          viewportWidth / ratio,
+        ),
+      );
 
       scene.style.width = `${height * ratio}px`;
       scene.style.height = `${height}px`;
@@ -575,25 +712,33 @@
       startAmbientLoop(blinkOnce);
     }
 
-    function loadFortuneCard() {
+    function loadFortuneCard(filename) {
+      const source = fortuneSource(filename);
       return new Promise((resolve, reject) => {
-        const finish = () => resolve();
-        fortuneCard.addEventListener("load", finish, { once: true });
-        fortuneCard.addEventListener(
-          "error",
-          () => reject(new Error(`Could not load ${FORTUNE_SOURCE}.`)),
-          { once: true },
-        );
-        fortuneCard.src = FORTUNE_SOURCE;
+        let settled = false;
+        const finish = (error) => {
+          if (settled) return;
+          settled = true;
+          fortuneCard.removeEventListener("load", loaded);
+          fortuneCard.removeEventListener("error", failed);
+          error ? reject(error) : resolve();
+        };
+        const loaded = () => finish();
+        const failed = () => finish(new Error(`Could not load ${source}.`));
+        fortuneCard.addEventListener("load", loaded);
+        fortuneCard.addEventListener("error", failed);
+        fortuneCard.src = source;
         if (fortuneCard.complete && fortuneCard.naturalWidth > 0) {
-          queueMicrotask(finish);
+          queueMicrotask(loaded);
         }
       });
     }
 
-    async function revealFortuneCard() {
-      await loadFortuneCard();
+    async function revealFortuneCard(filename) {
+      await loadFortuneCard(filename);
+      fortuneOverlay.hidden = false;
       fortuneButton.hidden = false;
+      fortuneButton.disabled = true;
 
       if (reducedMotionEnabled()) {
         fortuneButton.style.transform = "translateY(0)";
@@ -618,7 +763,7 @@
         );
       }
 
-      fortuneButton.focus({ preventScroll: true });
+      fortuneButton.disabled = false;
     }
 
     async function dismissFortuneCard() {
@@ -643,6 +788,40 @@
         );
       }
       fortuneButton.hidden = true;
+      fortuneOverlay.hidden = true;
+    }
+
+    async function viewFortune(filename) {
+      phase = "revealing";
+      window.clearInterval(cooldownInterval);
+      cooldownPanel.hidden = true;
+      viewerControls.hidden = true;
+      await revealFortuneCard(filename);
+      displayedFortune = filename;
+      saveFortuneButton.href = fortuneSource(filename);
+      saveFortuneButton.download = fortuneDownloadName(filename);
+      viewerControls.hidden = false;
+      phase = "viewing";
+      closeFortuneButton.focus({ preventScroll: true });
+    }
+
+    async function closeFortune() {
+      if (phase !== "viewing") return;
+      phase = "dismissing";
+      viewerControls.hidden = true;
+      fortuneButton.disabled = true;
+      await dismissFortuneCard();
+      await exitAnimation;
+      showCooldown(activeCooldownDeadline());
+      if (!lastFortuneButton.hidden) {
+        lastFortuneButton.focus({ preventScroll: true });
+      }
+    }
+
+    async function viewLastFortune() {
+      if (phase !== "cooldown") return;
+      const { last } = readFortuneState();
+      if (last) await viewFortune(last);
     }
 
     async function sendJeffAway() {
@@ -670,6 +849,7 @@
       phase = "cooldown";
       hideAction();
       cooldownPanel.hidden = false;
+      lastFortuneButton.hidden = !readFortuneState().last;
       window.clearInterval(cooldownInterval);
 
       const update = () => {
@@ -679,39 +859,41 @@
           window.clearInterval(cooldownInterval);
           removeStorage(STORAGE_KEYS.cooldown);
           window.location.reload();
-          return;
+          return false;
         }
 
         countdown.textContent = formatTime(remaining);
-        cooldownPanel.setAttribute(
+        timer.setAttribute(
           "aria-label",
           `Return for another fortune later. ${countdown.textContent} remaining.`,
         );
+        return true;
       };
 
-      update();
-      cooldownInterval = window.setInterval(update, 1000);
+      if (update()) {
+        cooldownInterval = window.setInterval(update, 1000);
+      }
     }
 
     async function takeFortune() {
+      const fortune = claimFortune();
       phase = "revealing";
       hideAction();
       const stoppedBlinking = stopAmbientLoop();
       cancelBlink();
       await stoppedBlinking;
       setLayerOpacity("blink", 0);
-      await revealFortuneCard();
 
-      const exitAnimation = sendJeffAway();
-      await new Promise((resolve) => {
-        fortuneButton.addEventListener("click", resolve, { once: true });
-      });
-      await dismissFortuneCard();
-      await exitAnimation;
+      if (!fortune) {
+        // Another tab may have acquired a fortune since this page opened.
+        setLayerOpacity("jeff", 0);
+        setLayerOpacity("out", 1);
+        showCooldown(activeCooldownDeadline());
+        return;
+      }
 
-      const deadline = Date.now() + COOLDOWN_MS;
-      writeStorage(STORAGE_KEYS.cooldown, deadline);
-      showCooldown(deadline);
+      await viewFortune(fortune.last);
+      exitAnimation = sendJeffAway().catch(showError);
     }
 
     function beginTakeFortune() {
@@ -770,6 +952,11 @@
       console.error(error);
       phase = "error";
       stopAmbientLoop();
+      window.clearInterval(cooldownInterval);
+      fortuneOverlay.hidden = true;
+      fortuneButton.hidden = true;
+      viewerControls.hidden = true;
+      cooldownPanel.hidden = true;
       loadingMessage.hidden = true;
       hideAction();
       errorPanel.hidden = false;
@@ -780,8 +967,9 @@
       try {
         errorPanel.hidden = true;
         page.setAttribute("aria-busy", "true");
+        await loadFortuneList();
 
-        if (introWasViewed()) {
+        if (introWasViewed() || activeCooldownDeadline()) {
           await playRevisit();
         } else {
           await playFirstVisit();
@@ -810,6 +998,32 @@
     });
 
     retryButton.addEventListener("click", () => window.location.reload());
+    fortuneButton.addEventListener("click", () =>
+      closeFortune().catch(showError),
+    );
+    closeFortuneButton.addEventListener("click", () =>
+      closeFortune().catch(showError),
+    );
+    lastFortuneButton.addEventListener("click", () =>
+      viewLastFortune().catch(showError),
+    );
+    saveFortuneButton.addEventListener("click", (event) => {
+      if (phase !== "viewing" || !displayedFortune) {
+        event.preventDefault();
+        return;
+      }
+      saveFortuneButton.download = fortuneDownloadName(displayedFortune);
+    });
+    document.addEventListener("keydown", (event) => {
+      if (
+        event.key === "Escape" &&
+        phase === "viewing" &&
+        !root.classList.contains("site-menu-open") &&
+        document.getElementById("accessibility-overlay")?.hidden !== false
+      ) {
+        closeFortune().catch(showError);
+      }
+    });
     document.addEventListener("jeff:history-cleared", () => {
       if (!redirectIfFortuneIsLocked()) {
         window.location.reload();
@@ -817,6 +1031,11 @@
     });
     window.addEventListener("resize", resizeScene);
     window.visualViewport?.addEventListener("resize", resizeScene);
+    window.addEventListener("pageshow", (event) => {
+      if (event.persisted && !redirectIfFortuneIsLocked()) {
+        window.location.reload();
+      }
+    });
 
     window.addEventListener("pagehide", () => {
       window.clearInterval(cooldownInterval);
