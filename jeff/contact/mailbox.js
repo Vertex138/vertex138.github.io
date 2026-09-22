@@ -3,7 +3,7 @@
   "use strict";
 
   const CONFIG = Object.freeze({
-    endpoint: "https://script.google.com/macros/s/AKfycbyHPJMfG9JqNAmOb0w1p9TRZnDg0RcnnNh-KY4iTPMKZJsnHE_uLhISldOKlKciteM_Tg/exec",
+    endpoint: "https://script.google.com/macros/s/AKfycbw-0qP6on_YKETOgEvCvXHY1sPo6tgcXkNL9e8GBzMZCXiU_MhKfrD5SzWo-ZchGMgQyQ/exec",
     siteOrigins: Object.freeze([
       "https://vertex138.github.io",
       "https://www.colinbrinkley.com", "http://www.colinbrinkley.com",
@@ -27,7 +27,8 @@
   const root = document.documentElement;
   const letters = new Map();
   let ui, state, mailboxKey, busy = false, ready = false, storageReady = true;
-  let quotaUntil = 0, nextCursor = null, dayTimer, draftTimer, lastRefresh = 0;
+  let quotaUntil = 0, nextCursor = null, dayTimer, draftTimer, escapeTimer, lastRefresh = 0;
+  let escapePresses = 0;
 
   function hasAccess() {
     try {
@@ -66,7 +67,10 @@
   function readState(create = false) {
     try {
       const raw = localStorage.getItem(CONFIG.storage);
-      if (!raw && create) return { version: 1, key: randomHex(32), lastReceivedAt: null, pending: null, draft: emptyDraft() };
+      if (!raw && create) return {
+        version: 1, key: randomHex(32), lastReceivedAt: null,
+        pending: null, draft: emptyDraft(), replyStatus: {}
+      };
       const saved = JSON.parse(raw);
       if (!saved || saved.version !== 1 || !HEX_KEY.test(saved.key) || (mailboxKey && saved.key !== mailboxKey)) {
         throw new Error("Mailbox identity changed");
@@ -77,6 +81,10 @@
       if (!Array.isArray(draft.to) || draft.to.some(id => typeof id !== "string") ||
           typeof draft.message !== "string" || typeof draft.signature !== "string") throw new Error("Invalid draft");
       saved.draft = { ...draft, to: [draft.to.find(id => Object.hasOwn(RECIPIENTS, id)) || "jeff"] };
+      const replyStatus = saved.replyStatus && typeof saved.replyStatus === "object" && !Array.isArray(saved.replyStatus)
+        ? saved.replyStatus : {};
+      saved.replyStatus = Object.fromEntries(Object.entries(replyStatus).filter(([id, status]) =>
+        HEX_ID.test(id) && status && typeof status === "object" && validDate(status.receivedAt) && typeof status.read === "boolean"));
       return saved;
     } catch (_) {
       throw problem("STORAGE", "Your saved mailbox could not be opened. Reload this page in the browser you used before. Browser storage must be enabled.");
@@ -102,6 +110,22 @@
       saved.lastReceivedAt = laterDate(saved.lastReceivedAt, receivedAt);
       if (saved.pending?.messageId === id) { saved.pending = null; saved.draft = emptyDraft(); }
     });
+  }
+
+  function handleDebugReset(event) {
+    if (event.key !== "Escape" || event.repeat) return;
+    clearTimeout(escapeTimer);
+    escapePresses += 1;
+    escapeTimer = setTimeout(() => { escapePresses = 0; }, 1200);
+    if (escapePresses < 3) return;
+    clearTimeout(escapeTimer);
+    escapePresses = 0;
+    try {
+      changeState(saved => { saved.lastReceivedAt = null; });
+      quotaUntil = 0;
+      updateControls();
+      setStatus(ui.sendStatus, "Debug: today's sending allowance has been reset.");
+    } catch (error) { fatal(error); }
   }
 
   function setStatus(element, message, error = false) {
@@ -131,6 +155,7 @@
   function updateCounters() {
     ui.messageCount.textContent = Array.from(normalize(ui.message.value)).length + " / 1,000 characters";
     ui.signatureCount.textContent = Array.from(normalize(ui.signature.value)).length + " / 100 characters";
+    ui.message.placeholder = "Write a letter to " + RECIPIENTS[ui.recipient.value] + " here!";
   }
   function editDraft(event) {
     if (event.isComposing) return;
@@ -142,7 +167,7 @@
     updateCounters();
     clearTimeout(draftTimer);
     draftTimer = setTimeout(() => withLock(() => {
-      if (!storageReady || busy) return;
+      if (!storageReady) return;
       const saved = readState();
       if (!saved.pending) { saved.draft = formDraft(); writeState(saved); }
     }).catch(fatal), 200);
@@ -151,15 +176,14 @@
     if (!ui) return;
     const pending = !!state?.pending;
     const limited = sentToday() || quotaUntil > Date.now();
-    ui.fields.disabled = !storageReady || busy || pending;
+    ui.fields.disabled = !storageReady || pending;
     ui.send.disabled = !storageReady || busy || !ready || (!pending && limited);
     ui.send.textContent = busy && pending ? "Sending…" : pending ? "Retry delivery" : "Send to Jeff";
-    ui.refresh.disabled = !storageReady || busy;
     ui.older.disabled = !storageReady || busy;
     ui.older.hidden = !nextCursor;
     ui.form.setAttribute("aria-busy", String(busy));
-    ui.limit.textContent = pending ? "This letter is saved until delivery is confirmed." : !ready ? "Checking your mailbox…" :
-      sentToday() ? "You've sent your letter for today. Come back after midnight, in your local time." :
+    ui.limit.textContent = pending ? "This letter is saved until delivery is confirmed." : !ready ? "Connecting to Jefferson's Mailbox..." :
+      sentToday() ? "You may only send one letter to Jeff per day. Check back tomorrow!" :
       quotaUntil > Date.now() ? "You can send again after " + new Date(quotaUntil).toLocaleString() + "." :
       "One letter per calendar day. Resets at midnight in your local time.";
     clearTimeout(dayTimer);
@@ -256,31 +280,70 @@
     if (className) node.className = className;
     return node;
   }
+  function updateUnreadCount() {
+    const unread = state ? Object.values(state.replyStatus).filter(status => !status.read).length : 0;
+    ui.mailboxTab.textContent = "Your Mailbox (" + unread + ")";
+  }
+  function markReplyRead(id, details) {
+    if (state.replyStatus[id]?.read) return;
+    try {
+      changeState(saved => { if (saved.replyStatus[id]) saved.replyStatus[id].read = true; });
+      details.classList.remove("is-unread");
+      updateUnreadCount();
+    } catch (error) { fatal(error); }
+  }
+  function showView(view) {
+    const mailbox = view === "mailbox";
+    ui.newPanel.hidden = mailbox;
+    ui.history.hidden = !mailbox;
+    ui.newTab.setAttribute("aria-selected", String(!mailbox));
+    ui.mailboxTab.setAttribute("aria-selected", String(mailbox));
+    ui.newTab.tabIndex = mailbox ? -1 : 0;
+    ui.mailboxTab.tabIndex = mailbox ? 0 : -1;
+    ui.subtitle.textContent = mailbox
+      ? "Check for responses from Jeff and his team!"
+      : "Leave a note for Jefferson, once per day!";
+    if (mailbox && !busy) refreshMailbox();
+  }
   function renderLetters() {
-    const openIds = new Set(Array.from(ui.list.querySelectorAll("details[open]"), node => node.dataset.id));
-    const firstRender = !ui.list.children.length;
+    const openIds = new Set(Array.from(ui.list.querySelectorAll("details[open]"), node => node.dataset.entryId));
     const fragment = document.createDocumentFragment();
-    const sorted = [...letters.values()].sort((a, b) => Date.parse(b.receivedAt) - Date.parse(a.receivedAt) || b.id.localeCompare(a.id));
-    sorted.forEach((letter, index) => {
-      const item = element("li");
-      const details = element("details", null, "saved-letter");
-      details.dataset.id = letter.id;
-      details.open = openIds.has(letter.id) || (firstRender && index === 0);
-      const summary = element("summary");
-      const time = element("time", new Date(letter.receivedAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }));
-      time.dateTime = letter.receivedAt;
-      summary.append(time, element("span", letter.reply !== null ? "Jeff replied" : "Sent", letter.reply !== null ? "reply-label" : ""));
-      const content = element("div", null, "saved-letter-content");
-      content.append(element("p", "Dear " + letter.to + ","), element("p", letter.message, "letter-text"));
-      if (letter.signature) content.append(element("p", "Sincerely, " + letter.signature, "letter-text"));
+    const entries = [];
+    for (const letter of letters.values()) {
+      entries.push({ key: "out-" + letter.id, type: "outgoing", time: letter.receivedAt, letter });
       if (letter.reply !== null) {
-        const reply = element("div", null, "jeff-reply");
-        reply.append(element("h3", "Jeff wrote back"), element("p", letter.reply, "letter-text"));
-        content.append(reply);
+        entries.push({
+          key: "in-" + letter.id, type: "incoming",
+          time: state.replyStatus[letter.id]?.receivedAt || letter.receivedAt, letter
+        });
+      }
+    }
+    entries.sort((a, b) => Date.parse(b.time) - Date.parse(a.time) || b.key.localeCompare(a.key));
+    entries.forEach(entry => {
+      const { letter } = entry;
+      const incoming = entry.type === "incoming";
+      const item = element("li");
+      const unread = incoming && !state.replyStatus[letter.id]?.read;
+      const details = element("details", null, "saved-letter " + (incoming ? "incoming-letter" : "outgoing-letter") + (unread ? " is-unread" : ""));
+      details.dataset.entryId = entry.key;
+      details.open = openIds.has(entry.key);
+      const summary = element("summary");
+      const line = element("span", incoming ? "To: You! From: Jeff | " : "To: " + letter.to + ", From: You! | ");
+      const time = element("time", new Date(entry.time).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }));
+      time.dateTime = entry.time;
+      line.append(time); summary.append(line);
+      const content = element("div", null, "saved-letter-content");
+      if (incoming) {
+        content.append(element("p", letter.reply, "letter-text"));
+        details.addEventListener("toggle", () => { if (details.open) markReplyRead(letter.id, details); });
+      } else {
+        content.append(element("p", "Dear " + letter.to + ","), element("p", letter.message, "letter-text"));
+        if (letter.signature) content.append(element("p", "Sincerely, " + letter.signature, "letter-text"));
       }
       details.append(summary, content); item.append(details); fragment.append(item);
     });
     ui.list.replaceChildren(fragment);
+    updateUnreadCount();
   }
   async function refreshMailbox(older = false) {
     if (busy || !storageReady) return;
@@ -288,7 +351,7 @@
     busy = true;
     clearTimeout(draftTimer);
     ui.history.setAttribute("aria-busy", "true");
-    setStatus(ui.historyStatus, older ? "Opening older letters…" : "Checking for letters and replies…");
+    setStatus(ui.historyStatus, older ? "Opening older letters…" : "Checking your mailbox...");
     updateControls();
     try {
       if (draft) await withLock(() => changeState(saved => { if (!saved.pending) saved.draft = draft; }));
@@ -298,6 +361,9 @@
         const saved = readState();
         for (const letter of found) {
           saved.lastReceivedAt = laterDate(saved.lastReceivedAt, letter.receivedAt);
+          if (letter.reply !== null && !saved.replyStatus[letter.id]) {
+            saved.replyStatus[letter.id] = { receivedAt: new Date().toISOString(), read: false };
+          }
           if (saved.pending?.messageId === letter.id) {
             saved.pending = null; saved.draft = emptyDraft();
             setStatus(ui.sendStatus, "Your letter was delivered to Jeff's mailbox.");
@@ -313,11 +379,11 @@
       lastRefresh = Date.now();
       restoreDraft(state.pending || state.draft);
       renderLetters();
-      setStatus(ui.historyStatus, letters.size ? "Your mailbox is up to date." : "No letters yet. Your first one can start right above.");
+      setStatus(ui.historyStatus, letters.size ? "Your mailbox is up to date." : "No letters yet.");
       if (state.pending) setStatus(ui.sendStatus, "Delivery has not been confirmed. Retry delivery to check this same letter.");
     } catch (error) {
       if (error.code === "STORAGE") fatal(error);
-      else setStatus(ui.historyStatus, error.message + " Use “Check for replies” to retry.", true);
+      else setStatus(ui.historyStatus, error.message + " Open this tab again to retry.", true);
     } finally {
       busy = false;
       ui.history.setAttribute("aria-busy", "false");
@@ -358,8 +424,8 @@
           message: letter.message, signature: letter.signature, reply: null });
         restoreDraft(state.draft);
         renderLetters();
-        setStatus(ui.sendStatus, "Delivered! Your letter is in Jeff's mailbox. Check below for any reply.");
-        setStatus(ui.historyStatus, "Your sent letter is shown below.");
+        setStatus(ui.sendStatus, "Delivered! Your letter is in Jeff's mailbox. Open Your Mailbox to check for a reply.");
+        setStatus(ui.historyStatus, "Your sent letter is in the mailbox.");
       });
     } catch (error) {
       if (error.code === "STORAGE") {
@@ -384,25 +450,41 @@
     const get = id => document.getElementById(id);
     ui = {
       page: get("mailbox-page"), form: get("letter-form"), fields: get("letter-fields"),
+      subtitle: get("mailbox-subtitle"), newPanel: get("new-letter-panel"),
+      newTab: get("new-letter-tab"), mailboxTab: get("your-mailbox-tab"),
       message: get("letter-message"), signature: get("letter-signature"),
       messageCount: get("message-count"), signatureCount: get("signature-count"),
       recipient: get("letter-recipient"),
       send: get("send-letter"), sendStatus: get("send-status"), limit: get("sending-limit"),
       problem: get("mailbox-problem"), history: get("letter-history"), historyStatus: get("history-status"),
-      refresh: get("refresh-mailbox"), older: get("older-letters"), list: get("letter-list"),
+      older: get("older-letters"), list: get("letter-list"),
     };
     root.classList.remove("mailbox-pending");
     ui.form.addEventListener("submit", sendLetter);
     ui.form.addEventListener("input", editDraft);
     ui.recipient.addEventListener("change", editDraft);
     ui.form.addEventListener("compositionend", editDraft);
-    ui.refresh.addEventListener("click", () => refreshMailbox());
+    document.addEventListener("keydown", handleDebugReset);
     ui.older.addEventListener("click", () => refreshMailbox(true));
+    ui.newTab.addEventListener("click", () => showView("new"));
+    ui.mailboxTab.addEventListener("click", () => showView("mailbox"));
+    for (const tab of [ui.newTab, ui.mailboxTab]) {
+      tab.addEventListener("keydown", event => {
+        if (!["ArrowLeft", "ArrowRight"].includes(event.key)) return;
+        event.preventDefault();
+        const next = tab === ui.newTab ? ui.mailboxTab : ui.newTab;
+        next.click(); next.focus();
+      });
+    }
     document.addEventListener("jeff:history-cleared", checkAccess);
     window.addEventListener("storage", event => {
       if (event.key === "viewedImages" || event.key === null) { if (!checkAccess()) return; }
       if (event.key === CONFIG.storage || event.key === null) {
-        try { state = readState(); if (!busy) restoreDraft(state.pending || state.draft); updateControls(); }
+        try {
+          state = readState();
+          if (!busy) restoreDraft(state.pending || state.draft);
+          renderLetters(); updateControls();
+        }
         catch (error) { fatal(error); }
       }
     });
