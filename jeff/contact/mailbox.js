@@ -1,10 +1,15 @@
-/* Save as /jeff/contact/mailbox.js. This script also performs the early access check. */
 (() => {
   "use strict";
 
   const CONFIG = Object.freeze({
     endpoint: "https://script.google.com/macros/s/AKfycbw-0qP6on_YKETOgEvCvXHY1sPo6tgcXkNL9e8GBzMZCXiU_MhKfrD5SzWo-ZchGMgQyQ/exec",
-    siteOrigin: "https://vertex138.github.io",
+    siteOrigins: Object.freeze([
+      "https://vertex138.github.io",
+      "https://www.colinbrinkley.com", "http://www.colinbrinkley.com",
+      "https://colinbrinkley.com", "http://colinbrinkley.com",
+      "https://www.vertex138.com", "http://www.vertex138.com",
+      "https://vertex138.com", "http://vertex138.com",
+    ]),
     root: "/jeff/",
     unlock: 100,
     storage: "jeffMailbox",
@@ -186,7 +191,7 @@
   }
   function request(action, data = {}) {
     const requestId = randomHex(16);
-    const payload = { ...data, version: 1, action, requestId, mailboxKey };
+    const payload = { ...data, version: 1, action, requestId, mailboxKey, siteOrigin: location.origin };
     return new Promise((resolve, reject) => {
       const frame = document.createElement("iframe");
       const form = document.createElement("form");
@@ -414,7 +419,7 @@
     if (overlay) observer.observe(overlay, { attributes: true, attributeFilter: ["hidden"] });
     syncModal();
     try {
-      if (location.origin !== CONFIG.siteOrigin) throw problem("ORIGIN", "Open this page on vertex138.github.io to use Jeff's Mailbox.");
+      if (!CONFIG.siteOrigins.includes(location.origin)) throw problem("ORIGIN", "This address is not enabled for Jeff's Mailbox.");
       await withLock(() => { state = readState(true); writeState(state); mailboxKey = state.key; });
       restoreDraft(state.pending || state.draft);
       await refreshMailbox();
