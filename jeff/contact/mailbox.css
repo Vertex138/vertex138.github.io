@@ -1,0 +1,84 @@
+@font-face {
+  font-family: "Super Bouncer";
+  src: url("/jeff/fonts/SuperBouncer.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --mailbox-text: #171717;
+  --mailbox-body-font: "Super Bouncer", Tahoma, sans-serif;
+}
+html.simplified-font { --mailbox-body-font: Tahoma, sans-serif; }
+html, body { margin: 0; min-height: 100%; max-width: 100%; overflow-x: hidden; }
+@supports (overflow-x: clip) { html, body { overflow-x: clip; } }
+body { background: #e6d79e; color: var(--mailbox-text); }
+[hidden] { display: none !important; }
+#mailbox-page, #mailbox-page * { box-sizing: border-box; }
+#mailbox-page {
+  width: min(92%, 760px);
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin-inline: auto;
+  padding: calc(max(2vh, env(safe-area-inset-top, 0px)) + clamp(72px, 10vh, 104px))
+    max(0px, env(safe-area-inset-right, 0px))
+    max(40px, env(safe-area-inset-bottom, 0px))
+    max(0px, env(safe-area-inset-left, 0px));
+}
+#mailbox-header { margin-bottom: clamp(28px, 5vh, 48px); text-align: center; }
+#mailbox-header h1 { margin: 0; font-size: clamp(34px, 7vw, 64px); font-weight: normal; line-height: 1.05; }
+#mailbox-header p { margin: 16px 0 0; font: clamp(17px, 2.5vw, 22px)/1.4 var(--mailbox-body-font); }
+.letter-paper { padding: clamp(20px, 5vw, 36px); border: 1px solid #b9a76c; border-radius: 12px; background: #fffdf5; box-shadow: 0 6px 18px #47381412; }
+#letter-fields, .recipient-options { min-width: 0; margin: 0; padding: 0; border: 0; }
+.letter-greeting { display: flex; align-items: baseline; flex-wrap: wrap; gap: 10px; margin-bottom: 24px; font-size: clamp(24px, 4vw, 32px); }
+#recipient-picker { flex: 1; min-width: 180px; }
+#recipient-picker summary { padding: 8px 12px; border: 1px solid #ac9a61; border-radius: 6px; cursor: pointer; font: 16px/1.5 Tahoma, sans-serif; overflow-wrap: anywhere; }
+.recipient-options { padding-top: 12px; font: 16px/1.4 Tahoma, sans-serif; }
+.recipient-options legend { float: left; width: 100%; padding: 10px 0 6px; font-size: 13px; color: #484848; }
+.recipient-options label { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 6px; cursor: pointer; }
+.recipient-options input { flex: 0 0 20px; width: 20px; height: 20px; margin: 0; accent-color: #403921; }
+#letter-message, #letter-signature {
+  display: block; width: 100%; border: 1px solid #8b836b; border-radius: 6px;
+  padding: 14px; color: #171717; background: #fff; font: 16px/1.6 Tahoma, sans-serif;
+}
+#letter-message { min-height: 210px; resize: vertical; }
+#letter-message::placeholder, #letter-signature::placeholder { color: #666; opacity: 1; }
+.character-count { margin: 6px 0 22px; text-align: right; color: #484848; font: 12px/1.4 Tahoma, sans-serif; }
+.signature-label { display: block; margin-bottom: 10px; font-size: clamp(24px, 4vw, 30px); }
+.letter-footer { display: flex; align-items: center; flex-wrap: wrap; gap: 14px 20px; }
+.letter-footer .small-print { flex: 1 1 200px; margin: 0; }
+.mailbox-button { min-height: 44px; padding: 12px 20px; border: 1px solid #272112; border-radius: 7px; background: #272112; color: #fff; font: 19px/1.2 var(--page-font, Tahoma, sans-serif); cursor: pointer; touch-action: manipulation; }
+.mailbox-button:hover:not(:disabled) { background: #453c24; }
+.mailbox-button:disabled { cursor: default; opacity: .55; }
+.secondary-button { background: transparent; color: #272112; font-size: 16px; }
+.secondary-button:hover:not(:disabled) { background: #ffffff66; }
+#mailbox-page :focus-visible { outline: 3px solid #285a70; outline-offset: 3px; }
+.small-print { font: 13px/1.6 Tahoma, sans-serif; color: #484848; }
+.mailbox-privacy { margin: 18px 8px 36px; }
+.mailbox-status { font: 14px/1.6 Tahoma, sans-serif; color: #343434; overflow-wrap: anywhere; }
+.mailbox-status:empty { display: none; }
+.mailbox-status[data-error="true"], .mailbox-notice { color: #7b251b; }
+.mailbox-notice { border: 1px solid #9d5849; border-radius: 8px; padding: 16px; background: #fff6e6; font: 15px/1.5 Tahoma, sans-serif; }
+#letter-history { border-top: 2px solid #17171755; padding-top: 28px; }
+.history-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+.history-heading h2 { margin: 0; font-size: clamp(27px, 5vw, 36px); font-weight: normal; }
+#letter-list { list-style: none; padding: 0; margin: 20px 0; }
+.saved-letter { margin-block: 14px; border: 1px solid #b9a76c; border-radius: 8px; background: #fffdf5; overflow: hidden; }
+.saved-letter summary { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; min-height: 54px; padding: 16px; cursor: pointer; font: 14px/1.5 Tahoma, sans-serif; }
+.saved-letter summary::after { content: "+"; font-size: 22px; }
+.saved-letter[open] summary::after { content: "−"; }
+.saved-letter summary::-webkit-details-marker { display: none; }
+.reply-label { color: #375337; font-weight: bold; }
+.saved-letter-content { padding: 0 20px 20px; border-top: 1px solid #e1d6b8; font: 15px/1.65 Tahoma, sans-serif; overflow-wrap: anywhere; }
+.letter-text { white-space: pre-wrap; }
+.jeff-reply { margin-top: 24px; padding: 18px; border-left: 3px solid #887744; background: #f1e8c8; }
+.jeff-reply h3 { margin: 0 0 10px; font-size: 16px; }
+.jeff-reply p { margin: 0; }
+html.simplified-font #mailbox-header h1, html.simplified-font .history-heading h2 { font-weight: bold; }
+@media (max-width: 420px) {
+  .letter-paper { padding: 18px; }
+  .letter-footer .mailbox-button { width: 100%; }
+  .history-heading { align-items: flex-start; }
+  .saved-letter-content { padding-inline: 14px; }
+}
