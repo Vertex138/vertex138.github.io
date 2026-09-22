@@ -28,17 +28,15 @@
       <fieldset id="letter-fields" disabled>
         <legend class="visually-hidden">Write a letter to Jeff</legend>
         <div class="letter-greeting">
-          <span>Dear</span>
-          <details id="recipient-picker">
-            <summary aria-label="Choose recipients"><span id="recipient-label">Jeff</span></summary>
-            <fieldset class="recipient-options">
-              <legend>Choose one or more</legend>
-              <label><input type="checkbox" name="recipient" value="jeff" checked> Jeff</label>
-              <label><input type="checkbox" name="recipient" value="jefferson"> Jefferson</label>
-              <label><input type="checkbox" name="recipient" value="caretaker"> Jeff's Caretaker</label>
-              <label><input type="checkbox" name="recipient" value="legal"> Jeff's Legal Representative</label>
-            </fieldset>
-          </details>
+          <label for="letter-recipient">Dear</label>
+          <select id="letter-recipient" name="recipient" required>
+            <option value="jeff">Jeff</option>
+            <option value="jefferson">Mr. Jefferson</option>
+            <option value="caretaker">Jeff's Caretaker</option>
+            <option value="secretary">Jeff's Secretary</option>
+            <option value="publicist">Jeff's Publicist</option>
+            <option value="admin">Jeff's Website Admin</option>
+          </select>
         </div>
 
         <label class="visually-hidden" for="letter-message">Your letter</label>
