@@ -1,3 +1,4 @@
+/* Save as /jeff/contact/mailbox.js. This script also performs the early access check. */
 (() => {
   "use strict";
 
@@ -18,8 +19,8 @@
     timeout: 45000,
   });
   const RECIPIENTS = {
-    jeff: "Jeff", jefferson: "Jefferson",
-    caretaker: "Jeff's Caretaker", legal: "Jeff's Legal Representative",
+    jeff: "Jeff", jefferson: "Mr. Jefferson", caretaker: "Jeff's Caretaker",
+    secretary: "Jeff's Secretary", publicist: "Jeff's Publicist", admin: "Jeff's Website Admin",
   };
   const HEX_ID = /^[a-f0-9]{32}$/;
   const HEX_KEY = /^[a-f0-9]{64}$/;
@@ -71,10 +72,11 @@
         throw new Error("Mailbox identity changed");
       }
       if (saved.lastReceivedAt !== null && !validDate(saved.lastReceivedAt)) throw new Error("Invalid receipt");
-      if (saved.pending) validateLetter(saved.pending);
+      if (saved.pending) validateLetter(saved.pending, true);
       const draft = saved.draft || emptyDraft();
-      if (!Array.isArray(draft.to) || draft.to.some(id => !Object.hasOwn(RECIPIENTS, id)) ||
+      if (!Array.isArray(draft.to) || draft.to.some(id => typeof id !== "string") ||
           typeof draft.message !== "string" || typeof draft.signature !== "string") throw new Error("Invalid draft");
+      saved.draft = { ...draft, to: [draft.to.find(id => Object.hasOwn(RECIPIENTS, id)) || "jeff"] };
       return saved;
     } catch (_) {
       throw problem("STORAGE", "Your saved mailbox could not be opened. Reload this page in the browser you used before. Browser storage must be enabled.");
@@ -116,12 +118,12 @@
   }
   function formDraft() {
     return {
-      to: ui.recipients.filter(input => input.checked).map(input => input.value),
+      to: [ui.recipient.value],
       message: ui.message.value, signature: ui.signature.value,
     };
   }
   function restoreDraft(draft) {
-    ui.recipients.forEach(input => { input.checked = draft.to.includes(input.value); });
+    ui.recipient.value = draft.to.find(id => Object.hasOwn(RECIPIENTS, id)) || "jeff";
     ui.message.value = draft.message;
     ui.signature.value = draft.signature;
     updateCounters();
@@ -129,7 +131,6 @@
   function updateCounters() {
     ui.messageCount.textContent = Array.from(normalize(ui.message.value)).length + " / 1,000 characters";
     ui.signatureCount.textContent = Array.from(normalize(ui.signature.value)).length + " / 100 characters";
-    ui.recipientLabel.textContent = ui.recipients.filter(input => input.checked).map(input => RECIPIENTS[input.value]).join(", ") || "Choose a recipient";
   }
   function editDraft(event) {
     if (event.isComposing) return;
@@ -167,10 +168,12 @@
     const wake = quotaUntil > Date.now() ? Math.min(midnight, quotaUntil) : midnight;
     dayTimer = setTimeout(updateControls, Math.max(100, wake - Date.now() + 50));
   }
-  function validateLetter(letter) {
+  function validateLetter(letter, stored = false) {
+    // Keep older pending deliveries intact until their receipt can be checked.
     if (!HEX_ID.test(letter.messageId) || !Array.isArray(letter.to) || !letter.to.length ||
-        letter.to.some(id => !Object.hasOwn(RECIPIENTS, id))) {
-      throw problem("RECIPIENT", "Choose at least one recipient for your letter.");
+        (!stored && letter.to.length !== 1) ||
+        letter.to.some(id => !Object.hasOwn(RECIPIENTS, id) && !(stored && id === "legal"))) {
+      throw problem("RECIPIENT", "Choose one recipient for your letter.");
     }
     for (const [field, limit] of [["message", CONFIG.messageLimit], ["signature", CONFIG.signatureLimit]]) {
       const value = letter[field];
@@ -351,7 +354,7 @@
         markAccepted(letter.messageId, result.receivedAt);
         applyAllowance(result);
         letters.set(letter.messageId, { id: letter.messageId, receivedAt: result.receivedAt,
-          to: Object.keys(RECIPIENTS).filter(id => letter.to.includes(id)).map(id => RECIPIENTS[id]).join(", "),
+          to: RECIPIENTS[letter.to[0]],
           message: letter.message, signature: letter.signature, reply: null });
         restoreDraft(state.draft);
         renderLetters();
@@ -370,7 +373,7 @@
           if (error.code === "DAILY_LIMIT" && validDate(error.nextAvailableAt)) quotaUntil = Date.parse(error.nextAvailableAt);
         }
         setStatus(ui.sendStatus, state.pending ? "We couldn't confirm delivery. Your letter is saved here. Use “Retry delivery” to check the same letter without sending a duplicate." : error.message, true);
-        if (error.code === "RECIPIENT") { ui.picker.open = true; focusTarget = ui.picker.querySelector("summary"); }
+        if (["RECIPIENT", "INVALID_RECIPIENT"].includes(error.code)) focusTarget = ui.recipient;
         else if (["message", "signature"].includes(error.code)) focusTarget = ui[error.code];
       }
     } finally { busy = false; updateControls(); focusTarget?.focus(); }
@@ -383,8 +386,7 @@
       page: get("mailbox-page"), form: get("letter-form"), fields: get("letter-fields"),
       message: get("letter-message"), signature: get("letter-signature"),
       messageCount: get("message-count"), signatureCount: get("signature-count"),
-      recipients: [...document.querySelectorAll('[name="recipient"]')],
-      picker: get("recipient-picker"), recipientLabel: get("recipient-label"),
+      recipient: get("letter-recipient"),
       send: get("send-letter"), sendStatus: get("send-status"), limit: get("sending-limit"),
       problem: get("mailbox-problem"), history: get("letter-history"), historyStatus: get("history-status"),
       refresh: get("refresh-mailbox"), older: get("older-letters"), list: get("letter-list"),
@@ -392,13 +394,10 @@
     root.classList.remove("mailbox-pending");
     ui.form.addEventListener("submit", sendLetter);
     ui.form.addEventListener("input", editDraft);
+    ui.recipient.addEventListener("change", editDraft);
     ui.form.addEventListener("compositionend", editDraft);
     ui.refresh.addEventListener("click", () => refreshMailbox());
     ui.older.addEventListener("click", () => refreshMailbox(true));
-    ui.picker.addEventListener("keydown", event => {
-      if (event.key === "Escape") { ui.picker.open = false; ui.picker.querySelector("summary").focus(); }
-    });
-    document.addEventListener("pointerdown", event => { if (!ui.picker.contains(event.target)) ui.picker.open = false; });
     document.addEventListener("jeff:history-cleared", checkAccess);
     window.addEventListener("storage", event => {
       if (event.key === "viewedImages" || event.key === null) { if (!checkAccess()) return; }
