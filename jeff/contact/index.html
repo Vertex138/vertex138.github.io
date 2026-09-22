@@ -19,55 +19,60 @@
   <main id="mailbox-page">
     <header id="mailbox-header">
       <h1>Jeff's Mailbox</h1>
-      <p>Leave a note. Jeff may reply between naps.</p>
+      <p id="mailbox-subtitle">Leave a note for Jefferson, once per day!</p>
+      <div id="mailbox-tabs" role="tablist" aria-label="Mailbox views">
+        <button id="new-letter-tab" type="button" role="tab" aria-selected="true"
+          aria-controls="new-letter-panel">New Letter</button>
+        <button id="your-mailbox-tab" type="button" role="tab" aria-selected="false"
+          aria-controls="letter-history" tabindex="-1">Your Mailbox (0)</button>
+      </div>
     </header>
 
     <p id="mailbox-problem" class="mailbox-notice" role="alert" hidden></p>
 
-    <form id="letter-form" class="letter-paper">
-      <fieldset id="letter-fields" disabled>
-        <legend class="visually-hidden">Write a letter to Jeff</legend>
-        <div class="letter-greeting">
-          <label for="letter-recipient">Dear</label>
-          <select id="letter-recipient" name="recipient" required>
-            <option value="jeff">Jeff</option>
-            <option value="jefferson">Mr. Jefferson</option>
-            <option value="caretaker">Jeff's Caretaker</option>
-            <option value="secretary">Jeff's Secretary</option>
-            <option value="publicist">Jeff's Publicist</option>
-            <option value="admin">Jeff's Website Admin</option>
-          </select>
+    <section id="new-letter-panel" role="tabpanel" aria-labelledby="new-letter-tab">
+      <form id="letter-form" class="letter-paper">
+        <fieldset id="letter-fields">
+          <legend class="visually-hidden">Write a letter to Jeff</legend>
+          <div class="letter-greeting">
+            <label for="letter-recipient">Dear</label>
+            <select id="letter-recipient" name="recipient" required>
+              <option value="jeff">Jeff</option>
+              <option value="jefferson">Mr. Jefferson</option>
+              <option value="caretaker">Jeff's Caretaker</option>
+              <option value="secretary">Jeff's Secretary</option>
+              <option value="publicist">Jeff's Publicist</option>
+              <option value="admin">Jeff's Website Admin</option>
+            </select>
+          </div>
+
+          <label class="visually-hidden" for="letter-message">Your letter</label>
+          <textarea id="letter-message" name="message" rows="7" maxlength="2000" required
+            placeholder="Write a letter to Jeff here!" aria-describedby="message-count" spellcheck="true"></textarea>
+          <p id="message-count" class="character-count">0 / 1,000 characters</p>
+
+          <label class="signature-label" for="letter-signature">Sincerely,</label>
+          <input id="letter-signature" name="signature" type="text" maxlength="200"
+            placeholder="Your pen name" autocomplete="nickname" aria-describedby="signature-count">
+          <p id="signature-count" class="character-count">0 / 100 characters</p>
+        </fieldset>
+
+        <div class="letter-footer">
+          <button id="send-letter" class="mailbox-button" type="submit" disabled>Send to Jeff</button>
+          <p id="sending-limit" class="small-print">Connecting to Jefferson's Mailbox...</p>
         </div>
+        <p id="send-status" class="mailbox-status" role="status" aria-live="polite" aria-atomic="true"></p>
+      </form>
 
-        <label class="visually-hidden" for="letter-message">Your letter</label>
-        <textarea id="letter-message" name="message" rows="7" maxlength="2000" required
-          placeholder="What's on your mind?" aria-describedby="message-count" spellcheck="true"></textarea>
-        <p id="message-count" class="character-count">0 / 1,000 characters</p>
+      <p class="mailbox-privacy small-print">
+        Letters go to Jeff's caretaker. Read any replies here using this same browser.
+        This page saves your mailbox key and draft on your device; clearing browser data removes access to your mailbox.
+      </p>
+    </section>
 
-        <label class="signature-label" for="letter-signature">Sincerely,</label>
-        <input id="letter-signature" name="signature" type="text" maxlength="200"
-          placeholder="Your name or email (optional)" autocomplete="name" aria-describedby="signature-count">
-        <p id="signature-count" class="character-count">0 / 100 characters</p>
-      </fieldset>
-
-      <div class="letter-footer">
-        <button id="send-letter" class="mailbox-button" type="submit" disabled>Send to Jeff</button>
-        <p id="sending-limit" class="small-print">Checking your mailbox…</p>
-      </div>
-      <p id="send-status" class="mailbox-status" role="status" aria-live="polite" aria-atomic="true"></p>
-    </form>
-
-    <p class="mailbox-privacy small-print">
-      Letters go to Jeff's caretaker. Read any replies here using this same browser.
-      This page saves your mailbox key and draft on your device; clearing browser data removes access to your mailbox.
-    </p>
-
-    <section id="letter-history" aria-labelledby="history-title" aria-busy="true">
-      <div class="history-heading">
-        <h2 id="history-title">Your mailbox</h2>
-        <button id="refresh-mailbox" class="mailbox-button secondary-button" type="button">Check for replies</button>
-      </div>
-      <p id="history-status" class="mailbox-status" role="status" aria-live="polite" aria-atomic="true">Opening your mailbox…</p>
+    <section id="letter-history" role="tabpanel" aria-labelledby="your-mailbox-tab" aria-busy="true" hidden>
+      <h2 class="visually-hidden">Your Mailbox</h2>
+      <p id="history-status" class="mailbox-status" role="status" aria-live="polite" aria-atomic="true">Checking your mailbox...</p>
       <ol id="letter-list"></ol>
       <button id="older-letters" class="mailbox-button secondary-button" type="button" hidden>Older letters</button>
     </section>
