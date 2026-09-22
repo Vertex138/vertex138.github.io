@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en" class="mailbox-pending">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Jeff's Mailbox</title>
+  <style>html.mailbox-pending { visibility: hidden; }</style>
+  <script src="/jeff/contact/mailbox.js"></script>
+  <link rel="icon" href="/jeff/icons/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="/jeff/icons/favicon-32x32.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/jeff/icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="/jeff/menu/site-menu.css">
+  <link rel="stylesheet" href="/jeff/contact/mailbox.css">
+  <script src="/jeff/menu/site-menu.js" defer></script>
+  <noscript><style>html.mailbox-pending { visibility: visible; } #mailbox-page { display: none; }</style></noscript>
+</head>
+<body>
+  <noscript><p>Please enable JavaScript to open Jeff's Mailbox. <a href="/jeff/">Meet Jeff</a></p></noscript>
+  <main id="mailbox-page">
+    <header id="mailbox-header">
+      <h1>Jeff's Mailbox</h1>
+      <p>Leave a note. Jeff may reply between naps.</p>
+    </header>
+
+    <p id="mailbox-problem" class="mailbox-notice" role="alert" hidden></p>
+
+    <form id="letter-form" class="letter-paper">
+      <fieldset id="letter-fields" disabled>
+        <legend class="visually-hidden">Write a letter to Jeff</legend>
+        <div class="letter-greeting">
+          <span>Dear</span>
+          <details id="recipient-picker">
+            <summary aria-label="Choose recipients"><span id="recipient-label">Jeff</span></summary>
+            <fieldset class="recipient-options">
+              <legend>Choose one or more</legend>
+              <label><input type="checkbox" name="recipient" value="jeff" checked> Jeff</label>
+              <label><input type="checkbox" name="recipient" value="jefferson"> Jefferson</label>
+              <label><input type="checkbox" name="recipient" value="caretaker"> Jeff's Caretaker</label>
+              <label><input type="checkbox" name="recipient" value="legal"> Jeff's Legal Representative</label>
+            </fieldset>
+          </details>
+        </div>
+
+        <label class="visually-hidden" for="letter-message">Your letter</label>
+        <textarea id="letter-message" name="message" rows="7" maxlength="2000" required
+          placeholder="What's on your mind?" aria-describedby="message-count" spellcheck="true"></textarea>
+        <p id="message-count" class="character-count">0 / 1,000 characters</p>
+
+        <label class="signature-label" for="letter-signature">Sincerely,</label>
+        <input id="letter-signature" name="signature" type="text" maxlength="200"
+          placeholder="Your name or email (optional)" autocomplete="name" aria-describedby="signature-count">
+        <p id="signature-count" class="character-count">0 / 100 characters</p>
+      </fieldset>
+
+      <div class="letter-footer">
+        <button id="send-letter" class="mailbox-button" type="submit" disabled>Send to Jeff</button>
+        <p id="sending-limit" class="small-print">Checking your mailbox…</p>
+      </div>
+      <p id="send-status" class="mailbox-status" role="status" aria-live="polite" aria-atomic="true"></p>
+    </form>
+
+    <p class="mailbox-privacy small-print">
+      Letters go to Jeff's caretaker. Read any replies here using this same browser.
+      This page saves your mailbox key and draft on your device; clearing browser data removes access to your mailbox.
+    </p>
+
+    <section id="letter-history" aria-labelledby="history-title" aria-busy="true">
+      <div class="history-heading">
+        <h2 id="history-title">Your mailbox</h2>
+        <button id="refresh-mailbox" class="mailbox-button secondary-button" type="button">Check for replies</button>
+      </div>
+      <p id="history-status" class="mailbox-status" role="status" aria-live="polite" aria-atomic="true">Opening your mailbox…</p>
+      <ol id="letter-list"></ol>
+      <button id="older-letters" class="mailbox-button secondary-button" type="button" hidden>Older letters</button>
+    </section>
+  </main>
+</body>
+</html>
