@@ -3,7 +3,7 @@
   "use strict";
 
   const CONFIG = Object.freeze({
-    endpoint: "https://script.google.com/macros/s/AKfycbyHPJMfG9JqNAmOb0w1p9TRZnDg0RcnnNh-KY4iTPMKZJsnHE_uLhISldOKlKciteM_Tg/exec",
+    endpoint: "https://script.google.com/macros/s/AKfycbxj-7Y1rB-AeS_DXykTOjMyTrVnGXRhb7z1IugMR9wLXWgkJRCUgXOmo9dkDfd_zgAc8w/exec",
     siteOrigins: Object.freeze([
       "https://vertex138.github.io",
       "https://www.colinbrinkley.com", "http://www.colinbrinkley.com",
