@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Jeff's Mailbox</title>
   <style>html.mailbox-pending { visibility: hidden; }</style>
-  <script src="/jeff/contact/mailbox.js?v=20260923-2"></script>
+  <script src="/jeff/contact/mailbox.js?v=20260926-1"></script>
   <link rel="icon" href="/jeff/icons/favicon.ico" sizes="any">
   <link rel="icon" type="image/png" sizes="32x32" href="/jeff/icons/favicon-32x32.png">
   <link rel="apple-touch-icon" sizes="180x180" href="/jeff/icons/apple-touch-icon.png">
   <link rel="stylesheet" href="/jeff/menu/site-menu.css">
-  <link rel="stylesheet" href="/jeff/contact/mailbox.css">
-  <script src="/jeff/contact/mailbox.js?v=20260923-1"></script>
+  <link rel="stylesheet" href="/jeff/contact/mailbox.css?v=20260926-1">
+  <script src="/jeff/menu/site-menu.js" defer></script>
   <noscript><style>html.mailbox-pending { visibility: visible; } #mailbox-page { display: none; }</style></noscript>
 </head>
 <body>
@@ -24,7 +24,7 @@
         <button id="new-letter-tab" type="button" role="tab" aria-selected="true"
           aria-controls="new-letter-panel">New Letter</button>
         <button id="your-mailbox-tab" type="button" role="tab" aria-selected="false"
-          aria-controls="letter-history" tabindex="-1">Your Mailbox (0)</button>
+          aria-controls="letter-history" tabindex="-1" disabled>Loading...</button>
       </div>
     </header>
 
@@ -47,12 +47,12 @@
           </div>
 
           <label class="visually-hidden" for="letter-message">Your letter</label>
-          <textarea id="letter-message" name="message" rows="7" maxlength="2000" required
+          <textarea id="letter-message" name="message" rows="7" maxlength="1000" required
             placeholder="Write a letter to Jeff here!" aria-describedby="message-count" spellcheck="true"></textarea>
           <p id="message-count" class="character-count">0 / 1,000 characters</p>
 
           <label class="signature-label" for="letter-signature">Sincerely,</label>
-          <input id="letter-signature" name="signature" type="text" maxlength="200"
+          <input id="letter-signature" name="signature" type="text" maxlength="100"
             placeholder="Your pen name" autocomplete="nickname" aria-describedby="signature-count">
           <p id="signature-count" class="character-count">0 / 100 characters</p>
         </fieldset>
@@ -72,10 +72,37 @@
 
     <section id="letter-history" role="tabpanel" aria-labelledby="your-mailbox-tab" aria-busy="true" hidden>
       <h2 class="visually-hidden">Your Mailbox</h2>
-      <p id="history-status" class="mailbox-status" role="status" aria-live="polite" aria-atomic="true">Checking your mailbox...</p>
+      <p id="history-status" class="mailbox-status" role="status" aria-live="polite" aria-atomic="true">Jeff's secretary is checking the mail...</p>
       <ol id="letter-list"></ol>
       <button id="older-letters" class="mailbox-button secondary-button" type="button" hidden>Older letters</button>
     </section>
   </main>
+
+  <div id="sent-confirmation-overlay" class="mailbox-overlay" role="dialog" aria-modal="true"
+    aria-labelledby="sent-confirmation-title" hidden>
+    <div id="sent-confirmation-card" class="mailbox-dialog-card">
+      <h2 id="sent-confirmation-title">Your letter has been sent!</h2>
+      <p>It may take a while for Jeff and his team to respond.</p>
+      <button id="sent-confirmation-continue" class="mailbox-button" type="button">Continue</button>
+    </div>
+  </div>
+
+  <div id="mailbox-image-viewer" class="mailbox-overlay" role="dialog" aria-modal="true"
+    aria-label="Attached picture of Jeff" hidden>
+    <button id="mailbox-image-close" type="button" aria-label="Close picture">×</button>
+    <p id="mailbox-image-status" role="status">Jeff is finding that picture...</p>
+    <figure id="mailbox-image-figure" hidden>
+      <img id="mailbox-full-image" alt="" draggable="false" tabindex="0">
+      <figcaption id="mailbox-full-image-id"></figcaption>
+    </figure>
+  </div>
+
+  <div id="mailbox-new-indicator" aria-hidden="true">
+    <span id="mailbox-new-symbol">★</span>
+    <span id="mailbox-new-label">NEW!</span>
+    <span id="mailbox-new-counter">
+      <span id="mailbox-viewed-count">0</span> / <span>150</span>
+    </span>
+  </div>
 </body>
 </html>
