@@ -4,13 +4,17 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Jeff's Mailbox</title>
-  <style>html.mailbox-pending { visibility: hidden; }</style>
-  <script src="/jeff/contact/mailbox.js?v=20260926-1"></script>
+  <style>
+    html.mailbox-pending { visibility: hidden; }
+    #mailbox-new-indicator { position: fixed; top: 2vh; right: 2vw; opacity: 0; pointer-events: none; }
+    #mailbox-new-indicator[hidden] { display: none !important; }
+  </style>
+  <script src="/jeff/contact/mailbox.js?v=20260927-1"></script>
   <link rel="icon" href="/jeff/icons/favicon.ico" sizes="any">
   <link rel="icon" type="image/png" sizes="32x32" href="/jeff/icons/favicon-32x32.png">
   <link rel="apple-touch-icon" sizes="180x180" href="/jeff/icons/apple-touch-icon.png">
   <link rel="stylesheet" href="/jeff/menu/site-menu.css">
-  <link rel="stylesheet" href="/jeff/contact/mailbox.css?v=20260926-1">
+  <link rel="stylesheet" href="/jeff/contact/mailbox.css?v=20260927-1">
   <script src="/jeff/menu/site-menu.js" defer></script>
   <noscript><style>html.mailbox-pending { visibility: visible; } #mailbox-page { display: none; }</style></noscript>
 </head>
@@ -29,6 +33,9 @@
     </header>
 
     <p id="mailbox-problem" class="mailbox-notice" role="alert" hidden></p>
+    <button id="mailbox-connect-retry" class="mailbox-button secondary-button" type="button" hidden>
+      Try connecting again
+    </button>
 
     <section id="new-letter-panel" role="tabpanel" aria-labelledby="new-letter-tab">
       <form id="letter-form" class="letter-paper">
@@ -97,7 +104,7 @@
     </figure>
   </div>
 
-  <div id="mailbox-new-indicator" aria-hidden="true">
+  <div id="mailbox-new-indicator" aria-hidden="true" hidden>
     <span id="mailbox-new-symbol">★</span>
     <span id="mailbox-new-label">NEW!</span>
     <span id="mailbox-new-counter">
