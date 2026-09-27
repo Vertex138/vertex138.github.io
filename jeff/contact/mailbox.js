@@ -1,4 +1,3 @@
-/* Save as /jeff/contact/mailbox.js. This script also performs the early access check. */
 (() => {
   "use strict";
 
@@ -18,6 +17,20 @@
     signatureLimit: 100,
     timeout: 45000,
   });
+  const IMAGES = Object.freeze({
+    total: 150,
+    recentLimit: 10,
+    map: "/jeff/images.json",
+    thumbsMap: "/jeff/thumbs.json",
+    directory: "/jeff/images/",
+    thumbsDirectory: "/jeff/thumbs/",
+  });
+  const IMAGE_STORAGE = Object.freeze({
+    viewed: "viewedImages",
+    recent: "recentImages",
+    streak: "noNewImageStreak",
+    completion: "collectionCompleteAcknowledged",
+  });
   const RECIPIENTS = {
     jeff: "Jeff", jefferson: "Mr. Jefferson", caretaker: "Jeff's Caretaker",
     secretary: "Jeff's Secretary", publicist: "Jeff's Publicist", admin: "Jeff's Website Admin",
@@ -26,9 +39,11 @@
   const HEX_KEY = /^[a-f0-9]{64}$/;
   const root = document.documentElement;
   const letters = new Map();
-  let ui, state, mailboxKey, busy = false, ready = false, storageReady = true;
+  let ui, state, mailboxKey, busy = false, ready = false, storageReady = true, connectionFailed = false;
   let quotaUntil = 0, nextCursor = null, dayTimer, draftTimer, escapeTimer, lastRefresh = 0;
   let escapePresses = 0;
+  let imageMapsPromise = null, imageViewerState = "closed", imageViewerRequest = 0;
+  let imageViewerTrigger = null, newIndicatorTimer = null, newIndicatorHideTimer = null, modalFocus = null;
 
   function hasAccess() {
     try {
@@ -134,9 +149,10 @@
   }
   function fatal(error) {
     storageReady = false;
+    ready = false;
     ui.problem.hidden = false;
     ui.problem.textContent = error.message;
-    setStatus(ui.historyStatus, "Your mailbox is unavailable.");
+    setStatus(ui.historyStatus, "Jeff's mailbox is unavailable right now.");
     ui.history.setAttribute("aria-busy", "false");
     updateControls();
   }
@@ -181,11 +197,14 @@
     ui.send.textContent = busy && pending ? "Sending…" : pending ? "Retry delivery" : "Send to Jeff";
     ui.older.disabled = !storageReady || busy;
     ui.older.hidden = !nextCursor;
+    ui.mailboxTab.disabled = !storageReady || !ready;
+    ui.mailboxTab.setAttribute("aria-disabled", String(ui.mailboxTab.disabled));
+    ui.retryConnection.hidden = !storageReady || !connectionFailed;
     ui.form.setAttribute("aria-busy", String(busy));
-    ui.limit.textContent = pending ? "This letter is saved until delivery is confirmed." : !ready ? "Connecting to Jefferson's Mailbox..." :
-      sentToday() ? "You may only send one letter to Jeff per day. Check back tomorrow!" :
-      quotaUntil > Date.now() ? "You can send again after " + new Date(quotaUntil).toLocaleString() + "." :
-      "One letter per calendar day. Resets at midnight in your local time.";
+    ui.limit.textContent = pending ? "Jeff's secretary saved this letter until delivery is confirmed." : connectionFailed ? "Jeff's mailbox couldn't connect. Try again." : !ready ? "Connecting to Jefferson's Mailbox..." :
+      sentToday() ? "Jeff's mailbox is closed for today. Check back tomorrow!" :
+      quotaUntil > Date.now() ? "Jeff will accept another letter after " + new Date(quotaUntil).toLocaleString() + "." :
+      "One letter per day. Jeff insists.";
     clearTimeout(dayTimer);
     const now = new Date();
     const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime();
@@ -248,17 +267,17 @@
             result.version !== 1 || result.requestId !== requestId || typeof result.ok !== "boolean") return;
         if (!result.ok) {
           const code = typeof result.error?.code === "string" ? result.error.code : "UNAVAILABLE";
-          const error = problem(code, typeof result.error?.message === "string" ? result.error.message : "Jeff's mailbox is unavailable. Please try again.");
+          const error = problem(code, typeof result.error?.message === "string" ? result.error.message : "Jeff's mailbox is unavailable right now. Try again.");
           error.nextAvailableAt = result.error?.nextAvailableAt;
           finish(error);
         } else if (result.action === action) finish(null, result);
       };
       window.addEventListener("message", receive);
-      timer = setTimeout(() => finish(problem("TIMEOUT", "The mailbox took too long to respond. Please try again.")), CONFIG.timeout);
+      timer = setTimeout(() => finish(problem("TIMEOUT", "Jeff's mailbox took too long to answer. Try again.")), CONFIG.timeout);
       try {
         document.body.append(frame, form);
         HTMLFormElement.prototype.submit.call(form);
-      } catch (_) { finish(problem("UNAVAILABLE", "The mailbox connection could not be opened. Please try again.")); }
+      } catch (_) { finish(problem("UNAVAILABLE", "Jeff's mailbox door would not open. Try again.")); }
     });
   }
   function applyAllowance(result) {
@@ -280,9 +299,272 @@
     if (className) node.className = className;
     return node;
   }
+  function formatImageId(imageId) { return "#" + String(imageId).padStart(3, "0"); }
+  function formatLetterDate(value) {
+    return new Intl.DateTimeFormat("en-US", {
+      month: "short", day: "2-digit", year: "numeric"
+    }).format(new Date(value)).toUpperCase();
+  }
+  function senderName(letter) { return letter.signature.trim() || "Anonymous"; }
+  function replyTime(letter) { return state.replyStatus[letter.id]?.receivedAt || letter.receivedAt; }
+  function reducedMotionEnabled() {
+    return window.JeffSite?.reducedMotionEnabled?.() ?? matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }
+  function readImageIds(key) {
+    try {
+      const ids = JSON.parse(localStorage.getItem(key) || "[]");
+      return Array.isArray(ids) ? [...new Set(ids.map(Number).filter(id =>
+        Number.isInteger(id) && id >= 1 && id <= IMAGES.total))] : [];
+    } catch (_) { return []; }
+  }
+  function showNewImageIndicator(viewedCount) {
+    clearTimeout(newIndicatorTimer);
+    clearTimeout(newIndicatorHideTimer);
+    ui.newIndicator.hidden = false;
+    ui.newViewedCount.textContent = String(Math.max(0, viewedCount - 1));
+    ui.newViewedCount.classList.remove("increment");
+    ui.newIndicator.classList.remove("show");
+    void ui.newIndicator.offsetWidth;
+    ui.newIndicator.setAttribute("aria-hidden", "false");
+    ui.newIndicator.classList.add("show");
+    newIndicatorTimer = setTimeout(() => {
+      ui.newViewedCount.textContent = String(viewedCount);
+      ui.newViewedCount.classList.add("increment");
+    }, 220);
+    newIndicatorHideTimer = setTimeout(hideNewImageIndicator, 2400);
+  }
+  function hideNewImageIndicator() {
+    clearTimeout(newIndicatorHideTimer);
+    ui.newIndicator.classList.remove("show");
+    ui.newIndicator.setAttribute("aria-hidden", "true");
+    ui.newIndicator.hidden = true;
+  }
+  function recordImageDiscovery(imageId) {
+    const viewed = readImageIds(IMAGE_STORAGE.viewed);
+    if (viewed.includes(imageId)) return false;
+    viewed.push(imageId);
+    const recent = readImageIds(IMAGE_STORAGE.recent).filter(id => id !== imageId);
+    recent.push(imageId);
+    try {
+      localStorage.setItem(IMAGE_STORAGE.viewed, JSON.stringify(viewed));
+      localStorage.setItem(IMAGE_STORAGE.recent, JSON.stringify(recent.slice(-IMAGES.recentLimit)));
+      localStorage.setItem(IMAGE_STORAGE.streak, "0");
+      if (viewed.length >= IMAGES.total) localStorage.removeItem(IMAGE_STORAGE.completion);
+    } catch (error) {
+      console.warn("Could not save the attached image discovery:", error);
+      return false;
+    }
+    showNewImageIndicator(viewed.length);
+    document.dispatchEvent(new CustomEvent("jeff:progress-changed"));
+    return true;
+  }
+  function normalizeImageMap(raw, source) {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw new Error(source + " is invalid.");
+    return Object.fromEntries(Object.entries(raw).map(([id, filename]) => [Number(id), filename]).filter(
+      ([id, filename]) => Number.isInteger(id) && id >= 1 && id <= IMAGES.total &&
+        typeof filename === "string" && filename.trim()
+    ));
+  }
+  async function fetchImageMap(url, source) {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error("Could not load " + source + ".");
+    return normalizeImageMap(await response.json(), source);
+  }
+  function loadImageMaps() {
+    if (!imageMapsPromise) {
+      imageMapsPromise = Promise.all([
+        fetchImageMap(IMAGES.map, "images.json"),
+        fetchImageMap(IMAGES.thumbsMap, "thumbs.json")
+      ]).then(([images, thumbs]) => ({ images, thumbs })).catch(error => {
+        imageMapsPromise = null;
+        throw error;
+      });
+    }
+    return imageMapsPromise;
+  }
+  function imageSource(directory, filename) { return directory + encodeURIComponent(filename); }
+  function attachmentIds(reply) {
+    const ids = [];
+    const text = reply.replace(/\[(\d{3})\]/g, (token, digits) => {
+      const imageId = Number(digits);
+      if (imageId < 1 || imageId > IMAGES.total) return token;
+      if (!ids.includes(imageId)) ids.push(imageId);
+      return "";
+    }).replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+    return { text, ids };
+  }
+  async function hydrateAttachment(button, imageId) {
+    const status = button.querySelector(".mailbox-attachment-status");
+    try {
+      const maps = await loadImageMaps();
+      const filename = maps.thumbs[imageId];
+      if (!button.isConnected || !filename) throw new Error("Thumbnail unavailable");
+      const image = new Image();
+      image.alt = "";
+      image.loading = "lazy";
+      image.decoding = "async";
+      image.draggable = false;
+      image.addEventListener("load", () => {
+        if (!button.isConnected) return;
+        status.replaceWith(image);
+        button.disabled = false;
+      }, { once: true });
+      image.addEventListener("error", () => { status.textContent = "Picture unavailable"; }, { once: true });
+      image.src = imageSource(IMAGES.thumbsDirectory, filename);
+    } catch (error) {
+      console.error(error);
+      if (button.isConnected) status.textContent = "Picture unavailable";
+    }
+  }
+  function appendAttachments(content, ids) {
+    if (!ids.length) return;
+    const attachments = element("div", null, "mailbox-attachments");
+    attachments.setAttribute("aria-label", "Pictures attached to this reply");
+    ids.forEach(imageId => {
+      const button = element("button", null, "mailbox-attachment");
+      button.type = "button";
+      button.disabled = true;
+      button.dataset.imageId = String(imageId);
+      button.setAttribute("aria-label", "Open attached image " + formatImageId(imageId));
+      const frame = element("span", null, "mailbox-attachment-frame");
+      frame.append(element("span", "Loading picture...", "mailbox-attachment-status"));
+      button.append(frame, element("span", formatImageId(imageId), "mailbox-attachment-id"));
+      button.addEventListener("click", () => openImageViewer(imageId, button));
+      attachments.append(button);
+      hydrateAttachment(button, imageId);
+    });
+    content.append(attachments);
+  }
+  function syncModalState() {
+    if (!ui) return;
+    const accessibility = document.getElementById("accessibility-overlay");
+    ui.page.inert = root.classList.contains("site-menu-open") ||
+      (!!accessibility && !accessibility.hidden) || !ui.confirmation.hidden || !ui.imageViewer.hidden;
+  }
+  function openSentConfirmation() {
+    modalFocus = document.activeElement;
+    ui.confirmation.hidden = false;
+    syncModalState();
+    requestAnimationFrame(() => ui.confirmationContinue.focus());
+  }
+  function closeSentConfirmation() {
+    ui.confirmation.hidden = true;
+    syncModalState();
+    modalFocus?.focus();
+    modalFocus = null;
+  }
+  function clearViewerAnimations() {
+    ui.imageFigure.classList.remove("mailbox-slide-in", "mailbox-slide-out", "mailbox-fade-in", "mailbox-fade-out");
+  }
+  function playViewerAnimation(name, duration) {
+    clearViewerAnimations();
+    return new Promise(resolve => {
+      let done = false;
+      let timer = null;
+      const finish = () => {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        ui.imageFigure.removeEventListener("animationend", onEnd);
+        resolve();
+      };
+      const onEnd = event => { if (event.target === ui.imageFigure) finish(); };
+      ui.imageFigure.addEventListener("animationend", onEnd);
+      ui.imageFigure.classList.add(name);
+      timer = setTimeout(finish, duration + 200);
+    });
+  }
+  function preloadImage(source) {
+    return new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(new Error("Could not load attached image."));
+      image.src = source;
+    });
+  }
+  async function openImageViewer(imageId, trigger) {
+    if (imageViewerState !== "closed") return;
+    imageViewerState = "loading";
+    imageViewerRequest += 1;
+    const requestId = imageViewerRequest;
+    imageViewerTrigger = trigger;
+    ui.imageViewer.hidden = false;
+    ui.imageFigure.hidden = true;
+    ui.imageStatus.hidden = false;
+    ui.imageStatus.textContent = "Jeff is finding that picture...";
+    root.classList.add("mailbox-viewer-open");
+    syncModalState();
+    ui.imageClose.focus();
+    try {
+      const maps = await loadImageMaps();
+      const filename = maps.images[imageId];
+      if (!filename) throw new Error("This picture could not be found.");
+      const preloader = await preloadImage(imageSource(IMAGES.directory, filename));
+      if (requestId !== imageViewerRequest) return;
+      ui.fullImage.src = preloader.src;
+      ui.fullImage.alt = "Full-size image " + formatImageId(imageId);
+      ui.fullImageId.textContent = formatImageId(imageId);
+      ui.imageStatus.hidden = true;
+      ui.imageFigure.hidden = false;
+      imageViewerState = "opening";
+      const reduced = reducedMotionEnabled();
+      await playViewerAnimation(reduced ? "mailbox-fade-in" : "mailbox-slide-in", reduced ? 350 : 550);
+      if (requestId !== imageViewerRequest) return;
+      clearViewerAnimations();
+      imageViewerState = "open";
+      recordImageDiscovery(imageId);
+      ui.fullImage.focus();
+    } catch (error) {
+      if (requestId !== imageViewerRequest) return;
+      console.error(error);
+      ui.imageStatus.textContent = error.message || "This picture could not be loaded.";
+      ui.imageStatus.hidden = false;
+      ui.imageFigure.hidden = true;
+      imageViewerState = "error";
+    }
+  }
+  function finishClosingImageViewer() {
+    ui.imageViewer.hidden = true;
+    ui.imageFigure.hidden = true;
+    ui.imageStatus.hidden = false;
+    ui.fullImage.removeAttribute("src");
+    clearViewerAnimations();
+    root.classList.remove("mailbox-viewer-open");
+    imageViewerState = "closed";
+    syncModalState();
+    imageViewerTrigger?.focus();
+    imageViewerTrigger = null;
+  }
+  async function closeImageViewer() {
+    if (imageViewerState === "closed" || imageViewerState === "closing") return;
+    imageViewerRequest += 1;
+    if (imageViewerState === "loading" || imageViewerState === "error" || ui.imageFigure.hidden) {
+      finishClosingImageViewer();
+      return;
+    }
+    imageViewerState = "closing";
+    const reduced = reducedMotionEnabled();
+    await playViewerAnimation(reduced ? "mailbox-fade-out" : "mailbox-slide-out", reduced ? 350 : 450);
+    finishClosingImageViewer();
+  }
+  function trapFocus(event, container) {
+    if (event.key !== "Tab") return;
+    const focusable = [...container.querySelectorAll("button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex='-1'])")]
+      .filter(node => !node.hidden && node.getClientRects().length);
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
   function updateUnreadCount() {
     const unread = state ? Object.values(state.replyStatus).filter(status => !status.read).length : 0;
-    ui.mailboxTab.textContent = "Your Mailbox (" + unread + ")";
+    ui.mailboxTab.textContent = ready ? "Your Mailbox (" + unread + ")" : "Loading...";
   }
   function markReplyRead(id, details) {
     if (state.replyStatus[id]?.read) return;
@@ -294,6 +576,7 @@
   }
   function showView(view) {
     const mailbox = view === "mailbox";
+    if (mailbox && !ready) return;
     ui.newPanel.hidden = mailbox;
     ui.history.hidden = !mailbox;
     ui.newTab.setAttribute("aria-selected", String(!mailbox));
@@ -305,42 +588,51 @@
       : "Leave a note for Jefferson, once per day!";
     if (mailbox && !busy) refreshMailbox();
   }
+  function makeHeader(to, from, timeValue) {
+    const lines = element("span", null, "letter-header-lines");
+    lines.append(element("span", "To: " + to), element("span", "From: " + from));
+    const line = element("span", "Sent ");
+    const time = element("time", formatLetterDate(timeValue));
+    time.dateTime = timeValue;
+    line.append(time);
+    lines.append(line);
+    return lines;
+  }
+  function makeLetterDetails(letter, incoming, openIds) {
+    const key = (incoming ? "in-" : "out-") + letter.id;
+    const unread = incoming && !state.replyStatus[letter.id]?.read;
+    const details = element("details", null, "saved-letter " +
+      (incoming ? "incoming-letter" : "outgoing-letter") + (unread ? " is-unread" : ""));
+    details.dataset.entryId = key;
+    details.open = openIds.has(key);
+    const summary = element("summary");
+    const author = senderName(letter);
+    summary.append(makeHeader(incoming ? author : letter.to, incoming ? letter.to : author,
+      incoming ? replyTime(letter) : letter.receivedAt));
+    const content = element("div", null, "saved-letter-content");
+    if (incoming) {
+      const parsed = attachmentIds(letter.reply);
+      content.append(element("span", "Reply to your letter", "reply-marker"));
+      content.append(element("p", "Dear " + author + ","));
+      if (parsed.text) content.append(element("p", parsed.text, "letter-text"));
+      content.append(element("p", "Sincerely, " + letter.to, "letter-text"));
+      appendAttachments(content, parsed.ids);
+      details.addEventListener("toggle", () => { if (details.open) markReplyRead(letter.id, details); });
+    } else {
+      content.append(element("p", "Dear " + letter.to + ","), element("p", letter.message, "letter-text"));
+      if (letter.signature) content.append(element("p", "Sincerely, " + letter.signature, "letter-text"));
+    }
+    details.append(summary, content);
+    return details;
+  }
   function renderLetters() {
     const openIds = new Set(Array.from(ui.list.querySelectorAll("details[open]"), node => node.dataset.entryId));
     const fragment = document.createDocumentFragment();
-    const entries = [];
-    for (const letter of letters.values()) {
-      entries.push({ key: "out-" + letter.id, type: "outgoing", time: letter.receivedAt, letter });
-      if (letter.reply !== null) {
-        entries.push({
-          key: "in-" + letter.id, type: "incoming",
-          time: state.replyStatus[letter.id]?.receivedAt || letter.receivedAt, letter
-        });
-      }
-    }
-    entries.sort((a, b) => Date.parse(b.time) - Date.parse(a.time) || b.key.localeCompare(a.key));
-    entries.forEach(entry => {
-      const { letter } = entry;
-      const incoming = entry.type === "incoming";
-      const item = element("li");
-      const unread = incoming && !state.replyStatus[letter.id]?.read;
-      const details = element("details", null, "saved-letter " + (incoming ? "incoming-letter" : "outgoing-letter") + (unread ? " is-unread" : ""));
-      details.dataset.entryId = entry.key;
-      details.open = openIds.has(entry.key);
-      const summary = element("summary");
-      const line = element("span", incoming ? "To: You! From: Jeff | " : "To: " + letter.to + ", From: You! | ");
-      const time = element("time", new Date(entry.time).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }));
-      time.dateTime = entry.time;
-      line.append(time); summary.append(line);
-      const content = element("div", null, "saved-letter-content");
-      if (incoming) {
-        content.append(element("p", letter.reply, "letter-text"));
-        details.addEventListener("toggle", () => { if (details.open) markReplyRead(letter.id, details); });
-      } else {
-        content.append(element("p", "Dear " + letter.to + ","), element("p", letter.message, "letter-text"));
-        if (letter.signature) content.append(element("p", "Sincerely, " + letter.signature, "letter-text"));
-      }
-      details.append(summary, content); item.append(details); fragment.append(item);
+    [...letters.values()].sort((a, b) => Date.parse(b.receivedAt) - Date.parse(a.receivedAt) || b.id.localeCompare(a.id)).forEach(letter => {
+      const thread = element("li", null, "letter-thread");
+      thread.append(makeLetterDetails(letter, false, openIds));
+      if (letter.reply !== null) thread.append(makeLetterDetails(letter, true, openIds));
+      fragment.append(thread);
     });
     ui.list.replaceChildren(fragment);
     updateUnreadCount();
@@ -349,9 +641,11 @@
     if (busy || !storageReady) return;
     const draft = state && !state.pending && !ui.fields.disabled ? formDraft() : null;
     busy = true;
+    connectionFailed = false;
+    ui.problem.hidden = true;
     clearTimeout(draftTimer);
     ui.history.setAttribute("aria-busy", "true");
-    setStatus(ui.historyStatus, older ? "Opening older letters…" : "Checking your mailbox...");
+    setStatus(ui.historyStatus, older ? "Jeff's secretary is digging through older mail..." : "Jeff's secretary is checking the mail...");
     updateControls();
     try {
       if (draft) await withLock(() => changeState(saved => { if (!saved.pending) saved.draft = draft; }));
@@ -366,7 +660,7 @@
           }
           if (saved.pending?.messageId === letter.id) {
             saved.pending = null; saved.draft = emptyDraft();
-            setStatus(ui.sendStatus, "Your letter was delivered to Jeff's mailbox.");
+            setStatus(ui.sendStatus, "Your letter is safely in Jeff's mailbox.");
           }
         }
         writeState(saved);
@@ -376,14 +670,22 @@
       nextCursor = result.nextCursor;
       applyAllowance(result);
       ready = true;
+      ui.problem.textContent = "";
       lastRefresh = Date.now();
       restoreDraft(state.pending || state.draft);
       renderLetters();
-      setStatus(ui.historyStatus, letters.size ? "Your mailbox is up to date." : "No letters yet.");
-      if (state.pending) setStatus(ui.sendStatus, "Delivery has not been confirmed. Retry delivery to check this same letter.");
+      setStatus(ui.historyStatus, letters.size ? "Jeff's secretary has finished sorting the mail." : "No letters yet. Jeff may be napping.");
+      if (state.pending) setStatus(ui.sendStatus, "Jeff's secretary could not confirm delivery. Retry this same letter.");
     } catch (error) {
       if (error.code === "STORAGE") fatal(error);
-      else setStatus(ui.historyStatus, error.message + " Open this tab again to retry.", true);
+      else {
+        if (!ready) {
+          connectionFailed = true;
+          ui.problem.textContent = "Jeff's secretary couldn't reach the mailbox. " + error.message;
+          ui.problem.hidden = false;
+        }
+        setStatus(ui.historyStatus, error.message + " Try again in a moment.", true);
+      }
     } finally {
       busy = false;
       ui.history.setAttribute("aria-busy", "false");
@@ -402,7 +704,7 @@
       await withLock(async () => {
         state = readState();
         if (!state.pending && (sentToday() || quotaUntil > Date.now())) {
-          setStatus(ui.sendStatus, "Your sending allowance has been used. Please return when the next letter is available.");
+          setStatus(ui.sendStatus, "Jeff's mailbox is closed for today. Check back tomorrow!");
           return;
         }
         const draft = formDraft();
@@ -413,7 +715,7 @@
         changeState(saved => { saved.pending = letter; saved.draft = { to: letter.to, message: letter.message, signature: letter.signature }; });
         restoreDraft(letter);
         updateControls();
-        setStatus(ui.sendStatus, "Sending your letter…");
+        setStatus(ui.sendStatus, "Handing your letter to Jeff's secretary...");
         const result = await request("send", letter);
         if (result.messageId !== letter.messageId || !validDate(result.receivedAt)) throw problem("RESPONSE", "Delivery could not be confirmed.");
         confirmed = true;
@@ -424,9 +726,10 @@
           message: letter.message, signature: letter.signature, reply: null });
         restoreDraft(state.draft);
         renderLetters();
-        setStatus(ui.sendStatus, "Delivered! Your letter is in Jeff's mailbox. Open Your Mailbox to check for a reply.");
-        setStatus(ui.historyStatus, "Your sent letter is in the mailbox.");
+        setStatus(ui.sendStatus, "Your letter is safely in Jeff's mailbox.");
+        setStatus(ui.historyStatus, "Jeff's secretary filed your new letter.");
       });
+      if (confirmed) openSentConfirmation();
     } catch (error) {
       if (error.code === "STORAGE") {
         if (confirmed) error.message = "Your letter was delivered, but this browser could not save its receipt. Enable browser storage and reload to retrieve your mailbox.";
@@ -438,7 +741,7 @@
           catch (storageError) { fatal(storageError); }
           if (error.code === "DAILY_LIMIT" && validDate(error.nextAvailableAt)) quotaUntil = Date.parse(error.nextAvailableAt);
         }
-        setStatus(ui.sendStatus, state.pending ? "We couldn't confirm delivery. Your letter is saved here. Use “Retry delivery” to check the same letter without sending a duplicate." : error.message, true);
+        setStatus(ui.sendStatus, state.pending ? "Jeff's secretary could not confirm delivery. Your letter is safe here; use “Retry delivery” to check it without sending a duplicate." : error.message, true);
         if (["RECIPIENT", "INVALID_RECIPIENT"].includes(error.code)) focusTarget = ui.recipient;
         else if (["message", "signature"].includes(error.code)) focusTarget = ui[error.code];
       }
@@ -457,7 +760,13 @@
       recipient: get("letter-recipient"),
       send: get("send-letter"), sendStatus: get("send-status"), limit: get("sending-limit"),
       problem: get("mailbox-problem"), history: get("letter-history"), historyStatus: get("history-status"),
+      retryConnection: get("mailbox-connect-retry"),
       older: get("older-letters"), list: get("letter-list"),
+      confirmation: get("sent-confirmation-overlay"), confirmationContinue: get("sent-confirmation-continue"),
+      imageViewer: get("mailbox-image-viewer"), imageClose: get("mailbox-image-close"),
+      imageStatus: get("mailbox-image-status"), imageFigure: get("mailbox-image-figure"),
+      fullImage: get("mailbox-full-image"), fullImageId: get("mailbox-full-image-id"),
+      newIndicator: get("mailbox-new-indicator"), newViewedCount: get("mailbox-viewed-count"),
     };
     root.classList.remove("mailbox-pending");
     ui.form.addEventListener("submit", sendLetter);
@@ -466,13 +775,29 @@
     ui.form.addEventListener("compositionend", editDraft);
     document.addEventListener("keydown", handleDebugReset);
     ui.older.addEventListener("click", () => refreshMailbox(true));
+    ui.retryConnection.addEventListener("click", () => refreshMailbox());
     ui.newTab.addEventListener("click", () => showView("new"));
     ui.mailboxTab.addEventListener("click", () => showView("mailbox"));
+    ui.confirmationContinue.addEventListener("click", closeSentConfirmation);
+    ui.imageClose.addEventListener("click", closeImageViewer);
+    ui.imageViewer.addEventListener("click", event => { if (event.target === ui.imageViewer) closeImageViewer(); });
+    ui.fullImage.addEventListener("click", closeImageViewer);
+    ui.fullImage.addEventListener("keydown", event => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        closeImageViewer();
+      }
+    });
+    ui.newIndicator.addEventListener("animationend", event => {
+      if (event.target !== ui.newIndicator) return;
+      hideNewImageIndicator();
+    });
     for (const tab of [ui.newTab, ui.mailboxTab]) {
       tab.addEventListener("keydown", event => {
         if (!["ArrowLeft", "ArrowRight"].includes(event.key)) return;
         event.preventDefault();
         const next = tab === ui.newTab ? ui.mailboxTab : ui.newTab;
+        if (next.disabled) return;
         next.click(); next.focus();
       });
     }
@@ -494,11 +819,19 @@
       if (Date.now() - lastRefresh > 60000) refreshMailbox();
     });
     const overlay = get("accessibility-overlay");
-    const syncModal = () => { ui.page.inert = root.classList.contains("site-menu-open") || !!overlay && !overlay.hidden; };
-    const observer = new MutationObserver(syncModal);
+    const observer = new MutationObserver(syncModalState);
     observer.observe(root, { attributes: true, attributeFilter: ["class"] });
     if (overlay) observer.observe(overlay, { attributes: true, attributeFilter: ["hidden"] });
-    syncModal();
+    syncModalState();
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape") {
+        if (!ui.confirmation.hidden) closeSentConfirmation();
+        else if (!ui.imageViewer.hidden) closeImageViewer();
+        return;
+      }
+      if (!ui.confirmation.hidden) trapFocus(event, ui.confirmation);
+      else if (!ui.imageViewer.hidden) trapFocus(event, ui.imageViewer);
+    });
     try {
       if (!CONFIG.siteOrigins.includes(location.origin)) throw problem("ORIGIN", "This address is not enabled for Jeff's Mailbox.");
       await withLock(() => { state = readState(true); writeState(state); mailboxKey = state.key; });
