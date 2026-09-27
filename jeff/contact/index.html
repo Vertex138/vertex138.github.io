@@ -8,13 +8,28 @@
     html.mailbox-pending { visibility: hidden; }
     #mailbox-new-indicator { position: fixed; top: 2vh; right: 2vw; opacity: 0; pointer-events: none; }
     #mailbox-new-indicator[hidden] { display: none !important; }
+    .mailbox-overlay[hidden] { display: none !important; }
+    .mailbox-overlay:not([hidden]) {
+      position: fixed; inset: 0; z-index: 4000; box-sizing: border-box;
+      display: grid; place-items: center; padding: 24px; background: #0000009e;
+    }
+    #sent-confirmation-card {
+      width: min(520px, calc(100vw - 48px)); max-height: calc(100dvh - 48px);
+      box-sizing: border-box; overflow-y: auto; padding: clamp(24px, 5vw, 38px);
+      border-radius: 20px; background: #f2e7bd; color: #171717; text-align: center;
+    }
+    #sent-confirmation-title { font: normal clamp(30px, 7vw, 48px)/1.05 "Matcha Mint", Tahoma, sans-serif; }
+    #sent-confirmation-card p { font: normal clamp(18px, 3.5vw, 23px)/1.4 "Super Bouncer", Tahoma, sans-serif; }
+    html.simplified-font #sent-confirmation-title,
+    html.simplified-font #sent-confirmation-card p { font-family: Tahoma, sans-serif; }
+    #mailbox-image-viewer:not([hidden]) { z-index: 5000; }
   </style>
-  <script src="/jeff/contact/mailbox.js?v=20260927-1"></script>
+  <script src="/jeff/contact/mailbox.js?v=20260927-2"></script>
   <link rel="icon" href="/jeff/icons/favicon.ico" sizes="any">
   <link rel="icon" type="image/png" sizes="32x32" href="/jeff/icons/favicon-32x32.png">
   <link rel="apple-touch-icon" sizes="180x180" href="/jeff/icons/apple-touch-icon.png">
   <link rel="stylesheet" href="/jeff/menu/site-menu.css">
-  <link rel="stylesheet" href="/jeff/contact/mailbox.css?v=20260927-1">
+  <link rel="stylesheet" href="/jeff/contact/mailbox.css?v=20260927-2">
   <script src="/jeff/menu/site-menu.js" defer></script>
   <noscript><style>html.mailbox-pending { visibility: visible; } #mailbox-page { display: none; }</style></noscript>
 </head>
