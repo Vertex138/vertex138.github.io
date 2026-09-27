@@ -398,22 +398,33 @@
     try {
       const maps = await loadImageMaps();
       const filename = maps.thumbs[imageId];
-      if (!button.isConnected || !filename) throw new Error("Thumbnail unavailable");
+      if (!button.isConnected) return;
+      if (!filename) throw new Error("Thumbnail unavailable");
       const image = new Image();
       image.alt = "";
-      image.loading = "lazy";
+      // Attachments are created only when their reply is opened. Load immediately so
+      // an initially hidden thumbnail cannot wait forever for a lazy-load trigger.
+      image.loading = "eager";
       image.decoding = "async";
       image.draggable = false;
+      image.hidden = true;
       image.addEventListener("load", () => {
         if (!button.isConnected) return;
-        status.replaceWith(image);
+        status.remove();
+        image.hidden = false;
         button.disabled = false;
       }, { once: true });
-      image.addEventListener("error", () => { status.textContent = "Picture unavailable"; }, { once: true });
+      image.addEventListener("error", () => {
+        image.remove();
+        status.textContent = "Picture unavailable";
+      }, { once: true });
+      status.after(image);
       image.src = imageSource(IMAGES.thumbsDirectory, filename);
     } catch (error) {
-      console.error(error);
-      if (button.isConnected) status.textContent = "Picture unavailable";
+      if (button.isConnected) {
+        console.error(error);
+        status.textContent = "Picture unavailable";
+      }
     }
   }
   function appendAttachments(content, ids) {
@@ -566,11 +577,11 @@
     const unread = state ? Object.values(state.replyStatus).filter(status => !status.read).length : 0;
     ui.mailboxTab.textContent = ready ? "Your Mailbox (" + unread + ")" : "Loading...";
   }
-  function markReplyRead(id, details) {
+  function markReplyRead(id, tab) {
     if (state.replyStatus[id]?.read) return;
     try {
       changeState(saved => { if (saved.replyStatus[id]) saved.replyStatus[id].read = true; });
-      details.classList.remove("is-unread");
+      tab.classList.remove("is-unread");
       updateUnreadCount();
     } catch (error) { fatal(error); }
   }
@@ -598,43 +609,76 @@
     lines.append(line);
     return lines;
   }
-  function makeLetterDetails(letter, incoming, openIds) {
-    const key = (incoming ? "in-" : "out-") + letter.id;
-    const unread = incoming && !state.replyStatus[letter.id]?.read;
-    const details = element("details", null, "saved-letter " +
-      (incoming ? "incoming-letter" : "outgoing-letter") + (unread ? " is-unread" : ""));
-    details.dataset.entryId = key;
-    details.open = openIds.has(key);
-    const summary = element("summary");
+  function makeLetterTab(letter, incoming) {
+    const tab = element("button", null, "saved-letter letter-tab " +
+      (incoming ? "incoming-letter" : "outgoing-letter") +
+      (incoming && !state.replyStatus[letter.id]?.read ? " is-unread" : ""));
+    tab.type = "button";
+    tab.dataset.entry = incoming ? "incoming" : "outgoing";
+    tab.id = `letter-${letter.id}-${tab.dataset.entry}`;
+    tab.setAttribute("aria-controls", `letter-${letter.id}-content`);
+    tab.setAttribute("aria-expanded", "false");
     const author = senderName(letter);
-    summary.append(makeHeader(incoming ? author : letter.to, incoming ? letter.to : author,
+    tab.append(makeHeader(incoming ? author : letter.to, incoming ? letter.to : author,
       incoming ? replyTime(letter) : letter.receivedAt));
-    const content = element("div", null, "saved-letter-content");
+    return tab;
+  }
+  function openLetter(thread, letter, entry) {
+    const panel = thread.querySelector(".thread-content");
+    const isOpen = thread.dataset.openEntry === entry;
+    thread.dataset.openEntry = isOpen ? "" : entry;
+    thread.querySelectorAll(".letter-tab").forEach(tab => {
+      tab.setAttribute("aria-expanded", String(!isOpen && tab.dataset.entry === entry));
+    });
+    panel.replaceChildren();
+    panel.hidden = isOpen;
+    if (isOpen) return;
+
+    const incoming = entry === "incoming";
+    panel.classList.toggle("incoming-letter", incoming);
+    panel.setAttribute("aria-labelledby", `letter-${letter.id}-${entry}`);
     if (incoming) {
       const parsed = attachmentIds(letter.reply);
-      content.append(element("span", "Reply to your letter", "reply-marker"));
-      content.append(element("p", "Dear " + author + ","));
-      if (parsed.text) content.append(element("p", parsed.text, "letter-text"));
-      content.append(element("p", "Sincerely, " + letter.to, "letter-text"));
-      appendAttachments(content, parsed.ids);
-      details.addEventListener("toggle", () => { if (details.open) markReplyRead(letter.id, details); });
+      panel.append(element("span", "Reply to your letter", "reply-marker"));
+      panel.append(element("p", "Dear " + senderName(letter) + ","));
+      if (parsed.text) panel.append(element("p", parsed.text, "letter-text"));
+      panel.append(element("p", "Sincerely, " + letter.to, "letter-text"));
+      appendAttachments(panel, parsed.ids);
+      markReplyRead(letter.id, thread.querySelector('.letter-tab[data-entry="incoming"]'));
     } else {
-      content.append(element("p", "Dear " + letter.to + ","), element("p", letter.message, "letter-text"));
-      if (letter.signature) content.append(element("p", "Sincerely, " + letter.signature, "letter-text"));
+      panel.append(element("p", "Dear " + letter.to + ","), element("p", letter.message, "letter-text"));
+      if (letter.signature) panel.append(element("p", "Sincerely, " + letter.signature, "letter-text"));
     }
-    details.append(summary, content);
-    return details;
   }
   function renderLetters() {
-    const openIds = new Set(Array.from(ui.list.querySelectorAll("details[open]"), node => node.dataset.entryId));
+    const openEntries = new Map([...ui.list.querySelectorAll(".letter-thread[data-open-entry]")]
+      .map(thread => [thread.dataset.letterId, thread.dataset.openEntry]));
     const fragment = document.createDocumentFragment();
+    const toRestore = [];
     [...letters.values()].sort((a, b) => Date.parse(b.receivedAt) - Date.parse(a.receivedAt) || b.id.localeCompare(a.id)).forEach(letter => {
-      const thread = element("li", null, "letter-thread");
-      thread.append(makeLetterDetails(letter, false, openIds));
-      if (letter.reply !== null) thread.append(makeLetterDetails(letter, true, openIds));
+      const thread = element("li", null, "letter-thread" + (letter.reply === null ? " is-solo" : ""));
+      thread.dataset.letterId = letter.id;
+      const outgoing = makeLetterTab(letter, false);
+      outgoing.addEventListener("click", () => openLetter(thread, letter, "outgoing"));
+      thread.append(outgoing);
+      if (letter.reply !== null) {
+        const incoming = makeLetterTab(letter, true);
+        incoming.addEventListener("click", () => openLetter(thread, letter, "incoming"));
+        thread.append(incoming);
+      }
+      const panel = element("div", null, "saved-letter-content thread-content");
+      panel.id = `letter-${letter.id}-content`;
+      panel.setAttribute("role", "region");
+      panel.hidden = true;
+      thread.append(panel);
       fragment.append(thread);
+      const previous = openEntries.get(letter.id);
+      if (previous === "outgoing" || (previous === "incoming" && letter.reply !== null)) {
+        toRestore.push([thread, letter, previous]);
+      }
     });
     ui.list.replaceChildren(fragment);
+    toRestore.forEach(([thread, letter, entry]) => openLetter(thread, letter, entry));
     updateUnreadCount();
   }
   async function refreshMailbox(older = false) {
