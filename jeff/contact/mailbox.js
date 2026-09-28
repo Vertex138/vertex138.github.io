@@ -25,6 +25,11 @@
     directory: "/jeff/images/",
     thumbsDirectory: "/jeff/thumbs/",
   });
+  const FORTUNES = Object.freeze({
+    count: 100,
+    map: "/jeff/fortune/fortunes.json",
+    directory: "/jeff/fortune/fortunes/",
+  });
   const IMAGE_STORAGE = Object.freeze({
     viewed: "viewedImages",
     recent: "recentImages",
@@ -42,7 +47,7 @@
   let ui, state, mailboxKey, busy = false, ready = false, storageReady = true, connectionFailed = false;
   let quotaUntil = 0, nextCursor = null, dayTimer, draftTimer, escapeTimer, lastRefresh = 0;
   let escapePresses = 0;
-  let imageMapsPromise = null, imageViewerState = "closed", imageViewerRequest = 0;
+  let imageMapsPromise = null, fortuneMapPromise = null, imageViewerState = "closed", imageViewerRequest = 0;
   let imageViewerTrigger = null, newIndicatorTimer = null, newIndicatorHideTimer = null, modalFocus = null;
 
   function hasAccess() {
@@ -382,16 +387,45 @@
     }
     return imageMapsPromise;
   }
+  function loadFortuneMap() {
+    if (!fortuneMapPromise) {
+      fortuneMapPromise = fetch(FORTUNES.map).then(async response => {
+        if (!response.ok) throw new Error("Could not load fortunes.json.");
+        const map = await response.json();
+        if (!map || typeof map !== "object" || Array.isArray(map) ||
+            Object.entries(map).some(([id, filename]) =>
+              !/^\d{2}$/.test(id) || Number(id) >= FORTUNES.count ||
+              typeof filename !== "string" || /[/\\]/.test(filename) ||
+              !/\.(?:png|jpe?g|webp|gif|avif)$/i.test(filename))) {
+          throw new Error("The fortune list could not be read.");
+        }
+        return map;
+      }).catch(error => {
+        fortuneMapPromise = null;
+        throw error;
+      });
+    }
+    return fortuneMapPromise;
+  }
   function imageSource(directory, filename) { return directory + encodeURIComponent(filename); }
-  function attachmentIds(reply) {
-    const ids = [];
-    const text = reply.replace(/\[(\d{3})\]/g, (token, digits) => {
-      const imageId = Number(digits);
-      if (imageId < 1 || imageId > IMAGES.total) return token;
-      if (!ids.includes(imageId)) ids.push(imageId);
+  function replyAttachments(reply, messageId) {
+    const attachments = [];
+    const seen = new Set();
+    const text = reply.replace(/\[(\d{3}|f(?:\d{2}|xx))\]/gi, (token, code) => {
+      const kind = /^\d/.test(code) ? "image" : "fortune";
+      const id = kind === "image" ? Number(code) :
+        code.slice(1).toLowerCase() === "xx"
+          ? Number(BigInt("0x" + messageId) % BigInt(FORTUNES.count))
+          : Number(code.slice(1));
+      if (kind === "image" && (id < 1 || id > IMAGES.total)) return token;
+      const key = kind + ":" + id;
+      if (!seen.has(key)) {
+        attachments.push({ kind, id });
+        seen.add(key);
+      }
       return "";
     }).replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
-    return { text, ids };
+    return { text, attachments };
   }
   async function hydrateAttachment(button, imageId) {
     const status = button.querySelector(".mailbox-attachment-status");
@@ -427,22 +461,33 @@
       }
     }
   }
-  function appendAttachments(content, ids) {
-    if (!ids.length) return;
+  function appendAttachments(content, items) {
+    if (!items.length) return;
     const attachments = element("div", null, "mailbox-attachments");
-    attachments.setAttribute("aria-label", "Pictures attached to this reply");
-    ids.forEach(imageId => {
+    attachments.setAttribute("aria-label", "Attachments to this reply");
+    items.forEach(({ kind, id }) => {
+      if (kind === "fortune") {
+        const button = element("button", null, "mailbox-fortune-attachment");
+        button.type = "button";
+        button.dataset.fortuneId = String(id).padStart(2, "0");
+        button.setAttribute("aria-label", "Open attached fortune " + button.dataset.fortuneId);
+        button.append(element("span", "★", "mailbox-fortune-star"), element("span", "FORTUNE"));
+        button.querySelector(".mailbox-fortune-star").setAttribute("aria-hidden", "true");
+        button.addEventListener("click", () => openAttachmentViewer("fortune", id, button));
+        attachments.append(button);
+        return;
+      }
       const button = element("button", null, "mailbox-attachment");
       button.type = "button";
       button.disabled = true;
-      button.dataset.imageId = String(imageId);
-      button.setAttribute("aria-label", "Open attached image " + formatImageId(imageId));
+      button.dataset.imageId = String(id);
+      button.setAttribute("aria-label", "Open attached image " + formatImageId(id));
       const frame = element("span", null, "mailbox-attachment-frame");
       frame.append(element("span", "Loading picture...", "mailbox-attachment-status"));
-      button.append(frame, element("span", formatImageId(imageId), "mailbox-attachment-id"));
-      button.addEventListener("click", () => openImageViewer(imageId, button));
+      button.append(frame, element("span", formatImageId(id), "mailbox-attachment-id"));
+      button.addEventListener("click", () => openAttachmentViewer("image", id, button));
       attachments.append(button);
-      hydrateAttachment(button, imageId);
+      hydrateAttachment(button, id);
     });
     content.append(attachments);
   }
@@ -493,28 +538,39 @@
       image.src = source;
     });
   }
-  async function openImageViewer(imageId, trigger) {
+  async function openAttachmentViewer(kind, id, trigger) {
     if (imageViewerState !== "closed") return;
     imageViewerState = "loading";
     imageViewerRequest += 1;
     const requestId = imageViewerRequest;
     imageViewerTrigger = trigger;
+    const isFortune = kind === "fortune";
+    ui.imageViewer.classList.toggle("is-fortune", isFortune);
+    ui.imageViewer.setAttribute("aria-label", isFortune ? "Attached fortune from Jeff" : "Attached picture of Jeff");
     ui.imageViewer.hidden = false;
     ui.imageFigure.hidden = true;
+    ui.fullImageId.hidden = isFortune;
     ui.imageStatus.hidden = false;
-    ui.imageStatus.textContent = "Jeff is finding that picture...";
+    ui.imageStatus.textContent = isFortune ? "Jeff is finding that fortune..." : "Jeff is finding that picture...";
     root.classList.add("mailbox-viewer-open");
     syncModalState();
     ui.imageClose.focus();
     try {
-      const maps = await loadImageMaps();
-      const filename = maps.images[imageId];
-      if (!filename) throw new Error("This picture could not be found.");
-      const preloader = await preloadImage(imageSource(IMAGES.directory, filename));
+      let source;
+      if (isFortune) {
+        const filename = (await loadFortuneMap())[String(id).padStart(2, "0")];
+        if (!filename) throw new Error("This fortune could not be found.");
+        source = imageSource(FORTUNES.directory, filename);
+      } else {
+        const filename = (await loadImageMaps()).images[id];
+        if (!filename) throw new Error("This picture could not be found.");
+        source = imageSource(IMAGES.directory, filename);
+      }
+      const preloader = await preloadImage(source);
       if (requestId !== imageViewerRequest) return;
       ui.fullImage.src = preloader.src;
-      ui.fullImage.alt = "Full-size image " + formatImageId(imageId);
-      ui.fullImageId.textContent = formatImageId(imageId);
+      ui.fullImage.alt = isFortune ? "Fortune from Jeff" : "Full-size image " + formatImageId(id);
+      ui.fullImageId.textContent = isFortune ? "" : formatImageId(id);
       ui.imageStatus.hidden = true;
       ui.imageFigure.hidden = false;
       imageViewerState = "opening";
@@ -523,7 +579,7 @@
       if (requestId !== imageViewerRequest) return;
       clearViewerAnimations();
       imageViewerState = "open";
-      recordImageDiscovery(imageId);
+      if (!isFortune) recordImageDiscovery(id);
       ui.fullImage.focus();
     } catch (error) {
       if (requestId !== imageViewerRequest) return;
@@ -539,6 +595,8 @@
     ui.imageFigure.hidden = true;
     ui.imageStatus.hidden = false;
     ui.fullImage.removeAttribute("src");
+    ui.fullImageId.hidden = false;
+    ui.imageViewer.classList.remove("is-fortune");
     clearViewerAnimations();
     root.classList.remove("mailbox-viewer-open");
     imageViewerState = "closed";
@@ -638,12 +696,12 @@
     panel.classList.toggle("incoming-letter", incoming);
     panel.setAttribute("aria-labelledby", `letter-${letter.id}-${entry}`);
     if (incoming) {
-      const parsed = attachmentIds(letter.reply);
+      const parsed = replyAttachments(letter.reply, letter.id);
       panel.append(element("span", "Reply to your letter", "reply-marker"));
       panel.append(element("p", "Dear " + senderName(letter) + ","));
       if (parsed.text) panel.append(element("p", parsed.text, "letter-text"));
       panel.append(element("p", "Sincerely, " + letter.to, "letter-text"));
-      appendAttachments(panel, parsed.ids);
+      appendAttachments(panel, parsed.attachments);
       markReplyRead(letter.id, thread.querySelector('.letter-tab[data-entry="incoming"]'));
     } else {
       panel.append(element("p", "Dear " + letter.to + ","), element("p", letter.message, "letter-text"));
