@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Error 404 | Jeff</title>
+
+  <link rel="icon" href="/jeff/icons/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="/jeff/icons/favicon-32x32.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/jeff/icons/apple-touch-icon.png">
+  <link rel="preload" href="/jeff/fonts/MatchaMint.woff2" as="font" type="font/woff2" crossorigin>
+
+  <link rel="stylesheet" href="/jeff/menu/site-menu.css">
+  <style>
+    @font-face {
+      font-family: "Super Bouncer";
+      src: url("/jeff/fonts/SuperBouncer.woff2") format("woff2");
+      font-display: swap;
+    }
+
+    :root { --error-copy-font: "Super Bouncer", Tahoma, sans-serif; }
+    html.simplified-font { --error-copy-font: Tahoma, sans-serif; }
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body { background: #e6d79e; color: #171717; }
+
+    .error-page {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(12px, 2vh, 22px);
+      min-height: 100vh;
+      min-height: 100dvh;
+      padding: calc(max(2vh, env(safe-area-inset-top, 0px)) + 70px)
+        20px max(24px, env(safe-area-inset-bottom, 0px));
+      text-align: center;
+    }
+
+    .error-page img {
+      display: block;
+      width: auto;
+      max-width: min(82vw, 680px);
+      max-height: min(48vh, 560px);
+      max-height: min(48dvh, 560px);
+      object-fit: contain;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+
+    .error-page h1 {
+      margin: 0;
+      font: normal clamp(40px, 8vw, 76px)/1 var(--page-font, "Matcha Mint", Tahoma, sans-serif);
+    }
+
+    .error-page p {
+      margin: 0;
+      font: normal clamp(19px, 3vw, 25px)/1.35 var(--error-copy-font);
+    }
+
+    .home-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 11px 22px;
+      border-radius: 8px;
+      background: #272112;
+      color: white;
+      font-size: clamp(18px, 3vw, 22px);
+      line-height: 1.2;
+      text-decoration: none;
+      touch-action: manipulation;
+    }
+
+    .home-link:hover, .home-link:focus-visible { background: #483c21; }
+    .home-link:focus-visible { outline: 3px solid #171717; outline-offset: 3px; }
+  </style>
+  <script src="/jeff/menu/site-menu.js" defer></script>
+</head>
+<body>
+  <main class="error-page">
+    <img src="/jeff/faq/faqimage.png" alt="Jeff" draggable="false">
+    <h1>Error 404</h1>
+    <p>Jeff couldn't find that page.</p>
+    <a class="home-link" href="/jeff/">Go back home</a>
+  </main>
+</body>
+</html>
