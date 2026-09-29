@@ -42,6 +42,17 @@ body { background: #e6d79e; color: var(--mailbox-text); }
 #mailbox-tabs button[aria-selected="true"] { color: #fff; background: #272112; }
 #mailbox-tabs button:hover:not(:disabled) { background: #453c24; color: #fff; }
 #mailbox-tabs button:disabled { cursor: wait; opacity: .55; }
+#mailbox-tabs #your-mailbox-tab.has-unread,
+#mailbox-tabs #your-mailbox-tab.has-unread:hover {
+  background: var(--mailbox-reply-background); color: #171717;
+}
+#mailbox-tabs #your-mailbox-tab.has-unread { animation: mailbox-unread-pulse 6s ease-in-out both; }
+#mailbox-tabs .mailbox-unread-star { font: 1.15em/1 Arial, sans-serif; }
+@keyframes mailbox-unread-pulse {
+  0%, 16.667%, 33.333%, 50%, 66.667%, 83.333% { background-color: #e6d79e; }
+  8.333%, 25%, 41.667%, 58.333%, 75%, 100% { background-color: var(--mailbox-reply-background); }
+}
+html.reduced-motion #mailbox-tabs #your-mailbox-tab.has-unread { animation: none; }
 .letter-paper { padding: clamp(20px, 5vw, 36px); border: 1px solid #b9a76c; border-radius: 12px; background: #fffdf5; box-shadow: 0 6px 18px #47381412; }
 #letter-fields { min-width: 0; margin: 0; padding: 0; border: 0; }
 .letter-greeting { display: flex; align-items: baseline; flex-wrap: wrap; gap: 10px; margin-bottom: 24px; font-size: clamp(24px, 4vw, 32px); }
@@ -106,6 +117,8 @@ body { background: #e6d79e; color: var(--mailbox-text); }
 .incoming-letter.letter-tab { font-weight: bold; }
 .incoming-letter.letter-tab:hover, .incoming-letter.letter-tab:focus-visible { background: #d0ead9; }
 .incoming-letter.is-unread { box-shadow: 0 0 0 3px #82a99366; }
+.letter-unread-label { font-size: clamp(23px, 4vw, 30px); line-height: 1.15; }
+.letter-unread-star { font-family: Arial, sans-serif; }
 .reply-marker { display: block; margin: 0 0 12px; color: #5d4f24; font: bold 12px/1.35 Tahoma, sans-serif; letter-spacing: .35px; text-transform: uppercase; }
 .incoming-letter .reply-marker { color: #315d45; }
 
