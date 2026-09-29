@@ -121,6 +121,12 @@ html.reduced-motion #mailbox-tabs #your-mailbox-tab.has-unread { animation: none
 .letter-unread-star { font-family: Arial, sans-serif; }
 .reply-marker { display: block; margin: 0 0 12px; color: #5d4f24; font: bold 12px/1.35 Tahoma, sans-serif; letter-spacing: .35px; text-transform: uppercase; }
 .incoming-letter .reply-marker { color: #315d45; }
+.mailbox-reply-icons { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 12px; margin: 18px 0; }
+.mailbox-reply-icon {
+  display: block; flex: 0 0 min(25%, 200px); width: min(25%, 200px);
+  max-width: 200px; height: auto; aspect-ratio: 1; object-fit: contain;
+}
+.mailbox-reply-icon-error { font: 13px/1.4 Tahoma, sans-serif; color: #484848; }
 
 .mailbox-attachments { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 16px; margin-top: 20px; }
 .mailbox-attachment {
