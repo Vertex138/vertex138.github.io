@@ -125,7 +125,7 @@ body { background: #e6d79e; color: var(--mailbox-text); }
 .mailbox-fortune-attachment {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   min-width: 150px; min-height: 58px; padding: 10px 16px;
-  border: 2px solid white; border-radius: 10px;
+  border: 2px solid #c83328; border-radius: 10px;
   background: #c8b48c; color: #c83328;
   font: 20px/1.2 var(--page-font, Tahoma, sans-serif);
   cursor: pointer; touch-action: manipulation;
