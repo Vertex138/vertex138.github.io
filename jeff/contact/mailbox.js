@@ -409,9 +409,15 @@
   }
   function imageSource(directory, filename) { return directory + encodeURIComponent(filename); }
   function replyAttachments(reply, messageId) {
-    const attachments = [];
+    const icons = [];
+    const images = [];
+    const fortunes = [];
     const seen = new Set();
-    const text = reply.replace(/\[(\d{3}|f(?:\d{2}|xx))\]/gi, (token, code) => {
+    const text = reply.replace(/\[(\d{3}|f(?:\d{2}|xx)|im[0-9])\]/gi, (token, code) => {
+      if (/^im[0-9]$/i.test(code)) {
+        icons.push(Number(code[2]));
+        return "";
+      }
       const kind = /^\d/.test(code) ? "image" : "fortune";
       const id = kind === "image" ? Number(code) :
         code.slice(1).toLowerCase() === "xx"
@@ -420,12 +426,31 @@
       if (kind === "image" && (id < 1 || id > IMAGES.total)) return token;
       const key = kind + ":" + id;
       if (!seen.has(key)) {
-        attachments.push({ kind, id });
+        (kind === "image" ? images : fortunes).push({ kind, id });
         seen.add(key);
       }
       return "";
     }).replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
-    return { text, attachments };
+    return { text, icons, images, fortunes };
+  }
+  function appendReplyIcons(content, ids) {
+    if (!ids.length) return;
+    const icons = element("div", null, "mailbox-reply-icons");
+    icons.setAttribute("role", "group");
+    icons.setAttribute("aria-label", "Illustrated sign-offs from Jeff");
+    content.append(icons);
+    ids.forEach(id => {
+      const image = element("img", null, "mailbox-reply-icon");
+      image.alt = "Jeff's message icon " + id;
+      image.loading = "lazy";
+      image.decoding = "async";
+      image.draggable = false;
+      image.addEventListener("error", () => {
+        image.replaceWith(element("span", "Icon unavailable", "mailbox-reply-icon-error"));
+      }, { once: true });
+      icons.append(image);
+      image.src = "/jeff/contact/im/" + id + ".png";
+    });
   }
   async function hydrateAttachment(button, imageId) {
     const status = button.querySelector(".mailbox-attachment-status");
@@ -461,10 +486,11 @@
       }
     }
   }
-  function appendAttachments(content, items) {
+  function appendAttachments(content, items, label) {
     if (!items.length) return;
     const attachments = element("div", null, "mailbox-attachments");
-    attachments.setAttribute("aria-label", "Attachments to this reply");
+    attachments.setAttribute("role", "group");
+    attachments.setAttribute("aria-label", label);
     items.forEach(({ kind, id }) => {
       if (kind === "fortune") {
         const button = element("button", null, "mailbox-fortune-attachment");
@@ -723,8 +749,10 @@
       panel.append(element("span", "Reply to your letter", "reply-marker"));
       panel.append(element("p", "Dear " + senderName(letter) + ","));
       if (parsed.text) panel.append(element("p", parsed.text, "letter-text"));
+      appendReplyIcons(panel, parsed.icons);
       panel.append(element("p", "Sincerely, " + letter.to, "letter-text"));
-      appendAttachments(panel, parsed.attachments);
+      appendAttachments(panel, parsed.images, "Pictures attached to this reply");
+      appendAttachments(panel, parsed.fortunes, "Fortunes attached to this reply");
       markReplyRead(letter, thread.querySelector('.letter-tab[data-entry="incoming"]'));
     } else {
       panel.append(element("p", "Dear " + letter.to + ","), element("p", letter.message, "letter-text"));
