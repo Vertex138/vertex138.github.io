@@ -1,29 +1,38 @@
 <!DOCTYPE html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>404</title>
-<style>
-    html, body {
-        margin: 0;
-        height: 100%;
-        background: white;
-        display: flex;
-        justify-content: center;
-        align-items: center;
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>404</title>
+
+  <script>
+    const path = location.pathname;
+
+    if (
+      (path === "/jeff" || path.startsWith("/jeff/")) &&
+      path !== "/jeff/404.html"
+    ) {
+      location.replace("/jeff/404.html");
+    }
+  </script>
+
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: grid;
+      place-items: center;
+      background: white;
     }
 
     .text {
-        font-size: 20vw; /* Scales with screen width */
-        font-family: Geneva, Verdana, sans-serif;
-        line-height: 1;
-        user-select: none;           /* Standard syntax */
-        -webkit-user-select: none;   /* Chrome, Safari, newer Edge */
-        -moz-user-select: none;      /* Firefox */
-        -ms-user-select: none;       /* Internet Explorer/old Edge */
+      font: bold 20vw/1 Geneva, Verdana, sans-serif;
+      user-select: none;
     }
-</style>
+  </style>
 </head>
 <body>
-    <div class="text"><b>404</b></div>
+  <main class="text">404</main>
 </body>
 </html>
