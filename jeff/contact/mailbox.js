@@ -633,13 +633,26 @@
   }
   function updateUnreadCount() {
     const unread = state ? Object.values(state.replyStatus).filter(status => !status.read).length : 0;
-    ui.mailboxTab.textContent = ready ? "Your Mailbox (" + unread + ")" : "Loading...";
+    if (!ready) {
+      ui.mailboxTab.textContent = "Loading...";
+    } else if (unread) {
+      const star = element("span", "★", "mailbox-unread-star");
+      star.setAttribute("aria-hidden", "true");
+      ui.mailboxTab.replaceChildren("Mailbox | ", star, " NEW!");
+      ui.mailboxTab.setAttribute("aria-label", "Mailbox, unread replies");
+    } else {
+      ui.mailboxTab.textContent = "Mailbox";
+      ui.mailboxTab.removeAttribute("aria-label");
+    }
+    ui.mailboxTab.classList.toggle("has-unread", ready && unread > 0);
   }
-  function markReplyRead(id, tab) {
-    if (state.replyStatus[id]?.read) return;
+  function markReplyRead(letter, tab) {
+    if (state.replyStatus[letter.id]?.read) return;
     try {
-      changeState(saved => { if (saved.replyStatus[id]) saved.replyStatus[id].read = true; });
+      changeState(saved => { if (saved.replyStatus[letter.id]) saved.replyStatus[letter.id].read = true; });
       tab.classList.remove("is-unread");
+      tab.removeAttribute("aria-label");
+      tab.replaceChildren(makeHeader(senderName(letter), letter.to, replyTime(letter)));
       updateUnreadCount();
     } catch (error) { fatal(error); }
   }
@@ -668,17 +681,27 @@
     return lines;
   }
   function makeLetterTab(letter, incoming) {
+    const unread = incoming && !state.replyStatus[letter.id]?.read;
     const tab = element("button", null, "saved-letter letter-tab " +
       (incoming ? "incoming-letter" : "outgoing-letter") +
-      (incoming && !state.replyStatus[letter.id]?.read ? " is-unread" : ""));
+      (unread ? " is-unread" : ""));
     tab.type = "button";
     tab.dataset.entry = incoming ? "incoming" : "outgoing";
     tab.id = `letter-${letter.id}-${tab.dataset.entry}`;
     tab.setAttribute("aria-controls", `letter-${letter.id}-content`);
     tab.setAttribute("aria-expanded", "false");
     const author = senderName(letter);
-    tab.append(makeHeader(incoming ? author : letter.to, incoming ? letter.to : author,
-      incoming ? replyTime(letter) : letter.receivedAt));
+    if (unread) {
+      const notice = element("span", null, "letter-unread-label");
+      const star = element("span", "★", "letter-unread-star");
+      star.setAttribute("aria-hidden", "true");
+      notice.append(star, document.createTextNode(" NEW"));
+      tab.append(notice);
+      tab.setAttribute("aria-label", "New reply from " + letter.to);
+    } else {
+      tab.append(makeHeader(incoming ? author : letter.to, incoming ? letter.to : author,
+        incoming ? replyTime(letter) : letter.receivedAt));
+    }
     return tab;
   }
   function openLetter(thread, letter, entry) {
@@ -702,7 +725,7 @@
       if (parsed.text) panel.append(element("p", parsed.text, "letter-text"));
       panel.append(element("p", "Sincerely, " + letter.to, "letter-text"));
       appendAttachments(panel, parsed.attachments);
-      markReplyRead(letter.id, thread.querySelector('.letter-tab[data-entry="incoming"]'));
+      markReplyRead(letter, thread.querySelector('.letter-tab[data-entry="incoming"]'));
     } else {
       panel.append(element("p", "Dear " + letter.to + ","), element("p", letter.message, "letter-text"));
       if (letter.signature) panel.append(element("p", "Sincerely, " + letter.signature, "letter-text"));
