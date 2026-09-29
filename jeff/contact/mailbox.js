@@ -551,7 +551,7 @@
     ui.imageFigure.hidden = true;
     ui.fullImageId.hidden = isFortune;
     ui.imageStatus.hidden = false;
-    ui.imageStatus.textContent = isFortune ? "Jeff is finding that fortune..." : "Jeff is finding that picture...";
+    ui.imageStatus.textContent = isFortune ? "Jeff is writing your fortune..." : "Jeff is fetching your picture...";
     root.classList.add("mailbox-viewer-open");
     syncModalState();
     ui.imageClose.focus();
