@@ -10,6 +10,7 @@
     completion: "collectionCompleteAcknowledged",
     reducedMotion: "reducedMotionPreference",
     simplifiedFont: "simplifiedFontPreference",
+    dataSaver: "dataSaverPreference",
     unlockKnown: "menuUnlockKnownLevel",
     unlockPending: "menuUnlockPendingLevel",
     introduction: "introductionAcknowledged",
@@ -20,12 +21,17 @@
 
   const MENU_LINKS = [
     { label: "Meet Jeff", href: "/jeff/", required: 0, hidden: false },
-    { label: "Jeff Gallery", href: "/jeff/gallery", required: 5, hidden: false },
+    {
+      label: "Jeff Gallery",
+      href: "/jeff/gallery",
+      required: 5,
+      hidden: false,
+    },
     { label: "Jeff's Mood", href: "/jeff/mood", required: 20, hidden: true },
     { label: "Jeff's FAQ", href: "/jeff/faq", required: 40, hidden: true },
     { label: "Help Jeff?", href: "/jeff/help", required: 60, hidden: true },
     { label: "Jeff's Fortune", href: "/jeff/fortune", required: 80, hidden: true },
-    { label: "Jeff's Mailbox", href: "/jeff/contact", required: 100, hidden: true},
+    { label: "Jeff's Mailbox", href: "/jeff/contact", required: 100, hidden: true },
     { label: "Thank you!", href: "/jeff/thanks", required: 150, hidden: false },
   ];
 
@@ -105,7 +111,7 @@
                             class="site-menu-item"
                             type="button"
                         >
-                            <span>Accessibility</span>
+                            <span>Settings</span>
                         </button>
                     </li>
 
@@ -140,7 +146,15 @@
                 hidden
             >
                 <div id="accessibility-card">
-                    <h2 id="accessibility-title">Accessibility</h2>
+                    <h2 id="accessibility-title">Settings</h2>
+
+                    <label class="accessibility-setting">
+                        <span>Data Saver</span>
+                        <input
+                            id="data-saver-setting"
+                            type="checkbox"
+                        >
+                    </label>
 
                     <label class="accessibility-setting">
                         <span>Reduced Motion</span>
@@ -185,11 +199,58 @@
   const reducedMotionSetting = document.getElementById(
     "reduced-motion-setting",
   );
+  const dataSaverSetting = document.getElementById("data-saver-setting");
   const simplifiedFontSetting = document.getElementById(
     "simplified-font-setting",
   );
   const forceNewButton = document.getElementById("force-new-button");
   const clearAllButton = document.getElementById("clear-all-button");
+
+  // "off" is an explicit choice; an unset preference may be enabled after slow loads.
+  let dataSaverMode = null;
+  try {
+    const storedMode = localStorage.getItem(STORAGE_KEYS.dataSaver);
+    if (["on", "off", "auto"].includes(storedMode)) {
+      dataSaverMode = storedMode;
+    }
+  } catch (error) {
+    console.warn("Could not retrieve the Data Saver setting:", error);
+  }
+
+  function dataSaverEnabled() {
+    return dataSaverMode === "on" || dataSaverMode === "auto";
+  }
+
+  function setDataSaverMode(mode) {
+    const wasEnabled = dataSaverEnabled();
+    dataSaverMode = mode;
+    try {
+      localStorage.setItem(STORAGE_KEYS.dataSaver, mode);
+    } catch (error) {
+      console.warn("Could not save the Data Saver setting:", error);
+    }
+    dataSaverSetting.checked = dataSaverEnabled();
+    root.classList.toggle("data-saver", dataSaverEnabled());
+    if (wasEnabled !== dataSaverEnabled()) {
+      document.dispatchEvent(new CustomEvent("jeff:data-saver-changed"));
+    }
+  }
+
+  function dataSaverUrl(source) {
+    if (!dataSaverEnabled()) {
+      return source;
+    }
+    const url = new URL(source, document.baseURI);
+    const directory = [
+      "/jeff/images/", "/jeff/thumbs/",
+      "/jeff/fortune/anim/", "/jeff/fortune/fortunes/",
+    ].find((prefix) => url.pathname.startsWith(prefix));
+    if (!directory || url.pathname.slice(directory.length).includes("/")) {
+      return source;
+    }
+    url.pathname = directory + "LOW/" + url.pathname.slice(directory.length);
+    return url.href;
+  }
 
   function readStoredBoolean(key, fallback) {
     try {
@@ -239,6 +300,7 @@
 
     reducedMotionSetting.checked = reducedMotion;
     simplifiedFontSetting.checked = simplifiedFont;
+    dataSaverSetting.checked = dataSaverEnabled();
   }
 
   function getViewedImageCount() {
@@ -438,7 +500,7 @@
     accessibilityOverlay.hidden = false;
 
     requestAnimationFrame(() => {
-      reducedMotionSetting.focus();
+      dataSaverSetting.focus();
     });
   }
 
@@ -551,6 +613,10 @@
     }
   });
 
+  dataSaverSetting.addEventListener("change", () => {
+    setDataSaverMode(dataSaverSetting.checked ? "on" : "off");
+  });
+
   reducedMotionSetting.addEventListener("change", () => {
     saveStoredBoolean(STORAGE_KEYS.reducedMotion, reducedMotionSetting.checked);
 
@@ -621,10 +687,20 @@
   });
 
   applyAccessibilitySettings();
+  root.classList.toggle("data-saver", dataSaverEnabled());
   refreshProgress();
 
   window.JeffSite = Object.freeze({
     reducedMotionEnabled: () => root.classList.contains("reduced-motion"),
+    dataSaverEnabled,
+    dataSaverUrl,
+    enableDataSaverAutomatically() {
+      if (dataSaverMode !== null) {
+        return false;
+      }
+      setDataSaverMode("auto");
+      return true;
+    },
 
     getUnlockRequirement(label) {
       const link = MENU_LINKS.find((item) => item.label === label);
