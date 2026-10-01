@@ -30,8 +30,18 @@
     { label: "Jeff's Mood", href: "/jeff/mood", required: 20, hidden: true },
     { label: "Jeff's FAQ", href: "/jeff/faq", required: 40, hidden: true },
     { label: "Help Jeff?", href: "/jeff/help", required: 60, hidden: true },
-    { label: "Jeff's Fortune", href: "/jeff/fortune", required: 80, hidden: true },
-    { label: "Jeff's Mailbox", href: "/jeff/contact", required: 100, hidden: true },
+    {
+      label: "Jeff's Fortune",
+      href: "/jeff/fortune",
+      required: 80,
+      hidden: true,
+    },
+    {
+      label: "Jeff's Mailbox",
+      href: "/jeff/contact",
+      required: 100,
+      hidden: true,
+    },
     { label: "Thank you!", href: "/jeff/thanks", required: 150, hidden: false },
   ];
 
@@ -190,6 +200,7 @@
   const unlockArrow = document.getElementById("site-menu-unlock-arrow");
   const unlockLabel = document.getElementById("site-menu-unlock-label");
   const menuPanel = document.getElementById("site-menu-panel");
+  const menuList = document.getElementById("site-menu-list");
   const menuBackdrop = document.getElementById("site-menu-backdrop");
   const accessibilityButton = document.getElementById("accessibility-button");
   const accessibilityOverlay = document.getElementById("accessibility-overlay");
@@ -419,6 +430,42 @@
     }
   }
 
+  function fitMenuToViewport() {
+    if (!root.classList.contains("site-menu-open")) return;
+
+    const properties = [
+      "--menu-item-font-size", "--menu-status-font-size",
+      "--menu-item-padding-y", "--menu-item-padding-x",
+      "--menu-item-gap", "--menu-list-gap",
+    ];
+    properties.forEach((property) => menuPanel.style.removeProperty(property));
+    if (menuPanel.scrollHeight <= menuPanel.clientHeight + 1) return;
+
+    const item = menuList.querySelector(".site-menu-item");
+    const status = menuList.querySelector(".site-menu-unlock-status");
+    const itemStyle = getComputedStyle(item);
+    const baseSizes = [
+      parseFloat(itemStyle.fontSize),
+      parseFloat(getComputedStyle(status).fontSize),
+      parseFloat(itemStyle.paddingTop),
+      parseFloat(itemStyle.paddingLeft),
+      parseFloat(itemStyle.columnGap),
+      parseFloat(getComputedStyle(menuList).rowGap),
+    ];
+
+    // Shrink text and spacing together; leave scrolling available if the
+    // screen is still too short or the visitor has enlarged their text.
+    for (const percent of [95, 90, 85, 80]) {
+      properties.forEach((property, index) => {
+        menuPanel.style.setProperty(
+          property,
+          `${(baseSizes[index] * percent / 100).toFixed(2)}px`,
+        );
+      });
+      if (menuPanel.scrollHeight <= menuPanel.clientHeight + 1) break;
+    }
+  }
+
   function refreshProgress() {
     const viewedCount = getViewedImageCount();
 
@@ -470,6 +517,7 @@
       : "Display an image you have not viewed before.";
 
     announceNewUnlock(viewedCount);
+    fitMenuToViewport();
   }
 
   function setMenuOpen(open, restoreFocus = true) {
@@ -481,10 +529,12 @@
     menuBackdrop.hidden = !open;
 
     if (open) {
+      menuPanel.scrollTop = 0;
       refreshProgress();
       hideUnlockNotice(true);
 
       requestAnimationFrame(() => {
+        fitMenuToViewport();
         menuPanel
           .querySelector(".site-menu-item:not([tabindex='-1']):not(:disabled)")
           ?.focus();
@@ -659,6 +709,9 @@
   clearAllButton.addEventListener("click", clearAllSavedImageHistory);
 
   document.addEventListener("jeff:progress-changed", refreshProgress);
+  window.addEventListener("resize", fitMenuToViewport);
+  window.visualViewport?.addEventListener("resize", fitMenuToViewport);
+  document.fonts?.ready.then(fitMenuToViewport);
 
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
