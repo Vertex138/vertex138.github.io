@@ -64,7 +64,7 @@
       return;
     }
 
-    const COOLDOWN_MS = 6 * 60 * 60 * 1000;
+    const COOLDOWN_MS = 3 * 60 * 60 * 1000;
     const RECENT_FORTUNE_LIMIT = 40;
     const FORTUNE_DIRECTORY = "/jeff/fortune/fortunes/";
     const FORTUNE_LIST_SOURCE = "/jeff/fortune/fortunes.json";
