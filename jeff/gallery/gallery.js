@@ -5,7 +5,6 @@
   const SITE_DIRECTORY = "/jeff/";
   const THUMB_DIRECTORY = `${SITE_DIRECTORY}thumbs/`;
   const IMAGE_DIRECTORY = `${SITE_DIRECTORY}images/`;
-  const MISSING_THUMBNAIL = `${THUMB_DIRECTORY}t_missing.jpg`;
   const THUMB_MAP_SOURCE = `${SITE_DIRECTORY}thumbs.json`;
   const IMAGE_MAP_SOURCE = `${SITE_DIRECTORY}images.json`;
   const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -65,11 +64,12 @@
     return normalizeImageMap(await response.json(), sourceName);
   }
   function imageSource(directory, filename) {
-    return directory + encodeURIComponent(filename);
+    const source = directory + encodeURIComponent(filename);
+    return window.JeffSite?.dataSaverUrl(source) ?? source;
   }
   function getThumbnailSource(imageId, unlocked) {
     if (!unlocked || !thumbnailMap[imageId]) {
-      return MISSING_THUMBNAIL;
+      return imageSource(THUMB_DIRECTORY, "t_missing.jpg");
     }
     return imageSource(THUMB_DIRECTORY, thumbnailMap[imageId]);
   }
@@ -93,7 +93,7 @@
     image.loading = "lazy";
     image.decoding = "async";
     image.draggable = false;
-    if (card.dataset.source === MISSING_THUMBNAIL) {
+    if (card.dataset.source === getThumbnailSource(Number(card.dataset.imageId), false)) {
       image.dataset.usingFallback = "true";
     }
     image.addEventListener("load", () => {
@@ -105,7 +105,7 @@
         return;
       }
       image.dataset.usingFallback = "true";
-      image.src = MISSING_THUMBNAIL;
+      image.src = getThumbnailSource(Number(card.dataset.imageId), false);
     });
     image.src = card.dataset.source;
     frame.append(image);
@@ -440,6 +440,7 @@
       closeFullImage();
     }
   });
+  document.addEventListener("jeff:data-saver-changed", refreshGalleryUnlocks);
   viewer.addEventListener("click", event => {
     if (event.target === viewer) {
       closeFullImage();
