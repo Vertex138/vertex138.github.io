@@ -300,7 +300,7 @@ html.gallery-locked #random-image {
 
 #intro-title,
 .intro-copy,
-#intro-accessibility,
+#intro-settings,
 #intro-storage {
   margin: 0;
 }
@@ -319,7 +319,7 @@ html.gallery-locked #random-image {
   line-height: 1.35;
 }
 
-#intro-accessibility {
+#intro-settings {
   font-family: Tahoma, sans-serif;
   font-size: clamp(15px, 2.8vw, 18px);
   line-height: 1.4;
