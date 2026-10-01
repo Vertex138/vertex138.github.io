@@ -1,18 +1,4 @@
-@font-face {
-  font-family: "Matcha Mint";
-  src: url("/jeff/fonts/MatchaMint.woff2") format("woff2");
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
 
-html {
-  scrollbar-gutter: stable;
-}
-
-:root {
-  --page-font: "Matcha Mint", Tahoma, sans-serif;
-  --symbol-font: Arial, sans-serif;
   --menu-icon-font: Tahoma, "Segoe UI Symbol", "Cambria Math", sans-serif;
   --menu-background: rgba(0, 0, 0, 0.7);
   --menu-edge-top: max(2vh, env(safe-area-inset-top, 0px));
@@ -177,7 +163,7 @@ html.site-menu-open #site-menu-panel {
 #site-menu-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--menu-list-gap, 6px);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -187,10 +173,10 @@ html.site-menu-open #site-menu-panel {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: var(--menu-item-gap, 16px);
   width: 100%;
   box-sizing: border-box;
-  padding: 12px 14px;
+  padding: var(--menu-item-padding-y, 12px) var(--menu-item-padding-x, 14px);
 
   border: 1px solid transparent;
   border-radius: 8px;
@@ -198,7 +184,7 @@ html.site-menu-open #site-menu-panel {
   color: white;
 
   font: inherit;
-  font-size: clamp(15px, 2vw, 19px);
+  font-size: var(--menu-item-font-size, clamp(15px, 2vw, 19px));
   line-height: 1.2;
   text-align: left;
   text-decoration: none;
@@ -233,7 +219,7 @@ html.site-menu-open #site-menu-panel {
 .site-menu-unlock-status {
   flex: 0 0 auto;
   font-family: Tahoma, sans-serif;
-  font-size: clamp(13px, 1.8vw, 15px);
+  font-size: var(--menu-status-font-size, clamp(13px, 1.8vw, 15px));
   letter-spacing: 0.5px;
   white-space: nowrap;
 }
