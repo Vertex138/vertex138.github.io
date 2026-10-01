@@ -120,6 +120,7 @@
     let blinkVersion = 0;
     let exitAnimation = Promise.resolve();
     let displayedFortune = null;
+    let preparedFortune = null;
     let fortuneFiles = [];
 
     function reducedMotionEnabled() {
@@ -236,11 +237,7 @@
       return Number.isFinite(deadline) && deadline > Date.now() ? deadline : 0;
     }
 
-    function claimFortune() {
-      const state = readFortuneState();
-      if (activeCooldownDeadline(state)) {
-        return null;
-      }
+    function availableFortunes(state) {
       if (!fortuneFiles.length) {
         throw new Error("No fortunes are available in fortunes.json.");
       }
@@ -250,10 +247,28 @@
         fortuneFiles.length - 1,
       );
       const excluded = excludedCount ? state.recent.slice(-excludedCount) : [];
-      const available = fortuneFiles.filter(
+      return fortuneFiles.filter(
         (filename) => !excluded.includes(filename),
       );
-      const filename = available[Math.floor(Math.random() * available.length)];
+    }
+
+    function chooseFortune() {
+      const state = readFortuneState();
+      if (activeCooldownDeadline(state)) return null;
+      const available = availableFortunes(state);
+      return available[Math.floor(Math.random() * available.length)];
+    }
+
+    function claimFortune(filename) {
+      const state = readFortuneState();
+      if (activeCooldownDeadline(state)) {
+        return null;
+      }
+      const available = availableFortunes(state);
+      // Another tab may have changed the recent history during the ritual.
+      if (!available.includes(filename)) {
+        filename = available[Math.floor(Math.random() * available.length)];
+      }
       const next = {
         last: filename,
         recent: [
@@ -263,8 +278,7 @@
         cooldownUntil: Date.now() + COOLDOWN_MS,
       };
 
-      // Save all three together, before any animation or image request.
-      // If storage fails, do not reveal an unrecorded fortune.
+      // Start the cooldown and save the choice when Take Fortune is pressed.
       localStorage.setItem(STORAGE_KEYS.fortunes, JSON.stringify(next));
       return next;
     }
@@ -692,6 +706,17 @@
       await fadeLayer("blink", 1, 250);
       await wait(1000);
 
+      const filename = chooseFortune();
+      if (!filename) {
+        showCooldown(activeCooldownDeadline());
+        return;
+      }
+      // Load into the hidden card while the stars animate. Handle rejection
+      // immediately so a failed request cannot produce an unhandled promise.
+      const preloadError = loadFortuneCard(filename).then(
+        () => null,
+        (error) => error,
+      );
       const duration = randomBetween(3000, 5000);
       if (reducedMotionEnabled()) {
         await stationaryStars(duration);
@@ -700,6 +725,9 @@
       }
 
       await fadeLayer("blink", 0, 100);
+      const error = await preloadError;
+      if (error) throw error;
+      preparedFortune = filename;
       beginTakeFortune();
     }
 
@@ -714,7 +742,14 @@
     }
 
     function loadFortuneCard(filename) {
-      const source = fortuneSource(filename);
+      const source = new URL(fortuneSource(filename), document.baseURI).href;
+      if (
+        fortuneCard.src === source &&
+        fortuneCard.complete &&
+        fortuneCard.naturalWidth > 0
+      ) {
+        return Promise.resolve();
+      }
       return new Promise((resolve, reject) => {
         let settled = false;
         const finish = (error) => {
@@ -877,7 +912,8 @@
     }
 
     async function takeFortune() {
-      const fortune = claimFortune();
+      const fortune = claimFortune(preparedFortune);
+      preparedFortune = null;
       phase = "revealing";
       hideAction();
       const stoppedBlinking = stopAmbientLoop();
@@ -951,6 +987,7 @@
 
     function showError(error) {
       console.error(error);
+      preparedFortune = null;
       phase = "error";
       stopAmbientLoop();
       window.clearInterval(cooldownInterval);
