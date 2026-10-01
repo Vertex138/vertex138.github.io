@@ -266,9 +266,12 @@ html.site-menu-open #site-menu-panel {
 
 #accessibility-card {
   width: min(380px, calc(100vw - 48px));
+  max-height: calc(100vh - 48px);
+  max-height: calc(100dvh - 48px);
   box-sizing: border-box;
   padding: 28px 24px 24px;
   border-radius: 20px;
+  overflow-y: auto;
 
   background: linear-gradient(135deg, #ffe680, #e6bc45);
   color: #272112;
