@@ -482,7 +482,8 @@
         throw new Error(`images.json does not contain image ${imageId}.`);
       }
 
-      const source = `/jeff/images/${encodeURIComponent(filename.trim())}`;
+      const normalSource = `/jeff/images/${encodeURIComponent(filename.trim())}`;
+      const source = window.JeffSite?.dataSaverUrl(normalSource) ?? normalSource;
       const preloaded = await preloadImage(source);
       const image = document.getElementById("mood-image");
       const figure = document.getElementById("mood-figure");
