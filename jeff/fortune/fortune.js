@@ -1,5 +1,3 @@
-// Temporary debug build. Install as /jeff/fortune/fortune.js.
-// Left/Right: preview fortunes. Backspace: three seconds of cooldown remain.
 (() => {
   "use strict";
 
@@ -123,8 +121,6 @@
     let exitAnimation = Promise.resolve();
     let displayedFortune = null;
     let fortuneFiles = [];
-    let debugBusy = false;
-    let debugCursor = -1;
 
     function reducedMotionEnabled() {
       return (
@@ -274,7 +270,8 @@
     }
 
     function fortuneSource(filename) {
-      return FORTUNE_DIRECTORY + encodeURIComponent(filename);
+      const source = FORTUNE_DIRECTORY + encodeURIComponent(filename);
+      return window.JeffSite?.dataSaverUrl(source) ?? source;
     }
 
     function fortuneDownloadName(filename, date = new Date()) {
@@ -366,7 +363,7 @@
 
         layer.addEventListener("load", finish, { once: true });
         layer.addEventListener("error", fail, { once: true });
-        layer.src = layer.dataset.src;
+        layer.src = window.JeffSite?.dataSaverUrl(layer.dataset.src) ?? layer.dataset.src;
 
         if (layer.complete && layer.naturalWidth > 0) {
           queueMicrotask(finish);
@@ -738,18 +735,11 @@
       });
     }
 
-    async function revealFortuneCard(filename, animate = true) {
+    async function revealFortuneCard(filename) {
       await loadFortuneCard(filename);
       fortuneOverlay.hidden = false;
       fortuneButton.hidden = false;
       fortuneButton.disabled = true;
-
-      if (!animate) {
-        fortuneButton.style.transform = "translateY(0)";
-        fortuneButton.style.opacity = "1";
-        fortuneButton.disabled = false;
-        return;
-      }
 
       if (reducedMotionEnabled()) {
         fortuneButton.style.transform = "translateY(0)";
@@ -802,14 +792,13 @@
       fortuneOverlay.hidden = true;
     }
 
-    async function viewFortune(filename, animate = true) {
+    async function viewFortune(filename) {
       phase = "revealing";
       window.clearInterval(cooldownInterval);
       cooldownPanel.hidden = true;
       viewerControls.hidden = true;
-      await revealFortuneCard(filename, animate);
+      await revealFortuneCard(filename);
       displayedFortune = filename;
-      debugCursor = fortuneFiles.indexOf(filename);
       saveFortuneButton.href = fortuneSource(filename);
       saveFortuneButton.download = fortuneDownloadName(filename);
       viewerControls.hidden = false;
@@ -992,105 +981,6 @@
         showError(error);
       }
     }
-
-    async function settleDebugScene() {
-      hideAction();
-      const stopped = stopAmbientLoop();
-      cancelBlink();
-      await stopped;
-      await exitAnimation;
-      ["peek1", "peek2", "peek3", "peek4", "jeff", "blink"].forEach((name) =>
-        setLayerOpacity(name, 0),
-      );
-      setLayerOpacity("out", 1);
-    }
-
-    async function previewDebugFortune(direction) {
-      debugBusy = true;
-      const wasViewing = phase === "viewing";
-      phase = "debug-preview";
-      window.clearInterval(cooldownInterval);
-      cooldownPanel.hidden = true;
-      errorPanel.hidden = true;
-      viewerControls.hidden = true;
-      fortuneButton.disabled = true;
-
-      const current =
-        debugCursor >= 0
-          ? debugCursor
-          : fortuneFiles.indexOf(displayedFortune || readFortuneState().last);
-      debugCursor =
-        current < 0
-          ? direction > 0
-            ? 0
-            : fortuneFiles.length - 1
-          : (current + direction + fortuneFiles.length) % fortuneFiles.length;
-
-      try {
-        if (!wasViewing) await settleDebugScene();
-        await viewFortune(fortuneFiles[debugCursor], false);
-      } finally {
-        debugBusy = false;
-      }
-    }
-
-    async function setDebugCooldown() {
-      const state = readFortuneState();
-      state.cooldownUntil = Date.now() + 3000;
-      localStorage.setItem(STORAGE_KEYS.fortunes, JSON.stringify(state));
-      // The legacy deadline must not override this shorter timer.
-      localStorage.removeItem(STORAGE_KEYS.cooldown);
-
-      if (phase === "viewing") return;
-
-      debugBusy = true;
-      errorPanel.hidden = true;
-      showCooldown(state.cooldownUntil);
-      try {
-        await settleDebugScene();
-      } finally {
-        debugBusy = false;
-      }
-    }
-
-    document.addEventListener("keydown", (event) => {
-      if (
-        !["ArrowLeft", "ArrowRight", "Backspace"].includes(event.key) ||
-        event.ctrlKey ||
-        event.metaKey ||
-        event.altKey ||
-        event.shiftKey ||
-        event.target?.isContentEditable ||
-        event.target?.closest?.("input, textarea, select") ||
-        root.classList.contains("site-menu-open") ||
-        document.getElementById("accessibility-overlay")?.hidden === false
-      ) {
-        return;
-      }
-
-      event.preventDefault();
-      if (
-        event.repeat ||
-        debugBusy ||
-        !fortuneFiles.length ||
-        ![
-          "summon-ready",
-          "fortune-ready",
-          "take-ready",
-          "cooldown",
-          "viewing",
-          "error",
-        ].includes(phase)
-      ) {
-        return;
-      }
-
-      const action =
-        event.key === "Backspace"
-          ? setDebugCooldown()
-          : previewDebugFortune(event.key === "ArrowRight" ? 1 : -1);
-      return action.catch(showError);
-    });
 
     actionButton.addEventListener("click", async () => {
       if (!actionHandler || actionButton.disabled) {
