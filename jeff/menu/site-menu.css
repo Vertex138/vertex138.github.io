@@ -1,4 +1,18 @@
+@font-face {
+  font-family: "Matcha Mint";
+  src: url("/jeff/fonts/MatchaMint.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
 
+html {
+  scrollbar-gutter: stable;
+}
+
+:root {
+  --page-font: "Matcha Mint", Tahoma, sans-serif;
+  --symbol-font: Arial, sans-serif;
   --menu-icon-font: Tahoma, "Segoe UI Symbol", "Cambria Math", sans-serif;
   --menu-background: rgba(0, 0, 0, 0.7);
   --menu-edge-top: max(2vh, env(safe-area-inset-top, 0px));
