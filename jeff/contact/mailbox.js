@@ -407,7 +407,10 @@
     }
     return fortuneMapPromise;
   }
-  function imageSource(directory, filename) { return directory + encodeURIComponent(filename); }
+  function imageSource(directory, filename) {
+    const source = directory + encodeURIComponent(filename);
+    return window.JeffSite?.dataSaverUrl(source) ?? source;
+  }
   function replyAttachments(reply, messageId) {
     const icons = [];
     const images = [];
