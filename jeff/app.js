@@ -7,6 +7,12 @@ const NEW_IMAGE_GUARANTEE_INTERVAL = 3;
 const NEW_IMAGE_GUARANTEE_STEP = .05;
 
 const IMAGE_DIRECTORY = "images/";
+let consecutiveSlowImageLoads = 0;
+
+function imageSource(filename) {
+  const source = IMAGE_DIRECTORY + encodeURIComponent(filename);
+  return window.JeffSite?.dataSaverUrl(source) ?? source;
+}
 
 const RECENT_IMAGES_KEY = "recentImages";
 
@@ -342,10 +348,20 @@ function playImageAnimation(element, animationClass, expectedDuration) {
 function preloadImage(source) {
   return new Promise((resolve, reject) => {
     const preloader = new Image;
+    const startedAt = performance.now();
     preloader.onload = () => {
+      const loadTime = performance.now() - startedAt;
+      consecutiveSlowImageLoads = loadTime > 1000
+        ? consecutiveSlowImageLoads + 1
+        : 0;
+      if (consecutiveSlowImageLoads >= 3) {
+        window.JeffSite?.enableDataSaverAutomatically();
+        consecutiveSlowImageLoads = 0;
+      }
       resolve(preloader);
     };
     preloader.onerror = () => {
+      consecutiveSlowImageLoads = 0;
       preloader.removeAttribute("src");
       reject(new Error(`Could not preload image: ${source}`));
     };
@@ -454,12 +470,11 @@ async function displayInitialImage() {
   const selection = chooseNextImageSelection(consumeForceNewRequest());
   const imageId = selection.imageId;
   const filename = imageMap[imageId];
-  const source = IMAGE_DIRECTORY + filename;
   let preloader = null;
   transitionInProgress = true;
   img.classList.add("is-transitioning");
   try {
-    preloader = await preloadImage(source);
+    preloader = await preloadImage(imageSource(filename));
     await applyPreloadedImage(img, preloader);
     recordDisplayedImage(imageId, selection.wasGuaranteed);
     const incomingAnimation = reducedMotionEnabled() ? "fade-in" : "slide-in";
@@ -481,7 +496,6 @@ async function displayNextImage(forceNew = false, retrySelection = null) {
   const selection = retrySelection || chooseNextImageSelection(forceNew);
   const imageId = selection.imageId;
   const filename = imageMap[imageId];
-  const source = IMAGE_DIRECTORY + filename;
   let preloader = null;
   transitionInProgress = true;
   img.classList.add("is-transitioning");
@@ -490,7 +504,7 @@ async function displayNextImage(forceNew = false, retrySelection = null) {
     const outgoingAnimation = useReducedMotion ? "fade-out" : "slide-out";
     const outgoingDuration = useReducedMotion ? 350 : 450;
     await playImageAnimation(imageContainer, outgoingAnimation, outgoingDuration);
-    preloader = await preloadImage(source);
+    preloader = await preloadImage(imageSource(filename));
     img.removeAttribute("src");
     await applyPreloadedImage(img, preloader);
     recordDisplayedImage(imageId, selection.wasGuaranteed);
