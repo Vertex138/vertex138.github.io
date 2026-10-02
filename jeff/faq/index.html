@@ -38,13 +38,23 @@
     <main id="faq-page">
       <header id="faq-header">
         <h1>Jeff's FAQ</h1>
+        <p id="faq-subtitle" aria-live="polite">What do you want to ask about?</p>
       </header>
 
-      <section id="faq-list" aria-label="Frequently asked questions" aria-busy="true">
+      <div id="faq-content" aria-busy="true">
         <p id="faq-status" role="status" aria-live="polite">Loading FAQ…</p>
-      </section>
+        <section id="faq-categories" aria-label="FAQ categories" hidden>
+          <div id="faq-category-buttons"></div>
+        </section>
 
-      <img id="faq-image" src="/jeff/faq/faqimage.png" alt="" draggable="false" hidden />
+        <section id="faq-questions-view" aria-label="Frequently asked questions" hidden>
+          <button id="faq-back" class="faq-control-button" type="button">
+            Ask about something else
+          </button>
+          <div id="faq-list"></div>
+          <img id="faq-image" src="/jeff/faq/faqimage.png" alt="" draggable="false" hidden />
+        </section>
+      </div>
     </main>
   </body>
 </html>
