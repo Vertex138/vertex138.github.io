@@ -39,6 +39,10 @@
           "comment": "They often take my picture without permission, so I'm not always photo-ready. It's pretty rude, really."
         },
         {
+          "question": "Did Jeff approve these pictures?",
+          "answer": "Jeff was given several opportunities to comment. He responded by flopping onto his back and rolling around for a moment or two."
+        },
+        {
           "question": "Where does Jeff like to nap?",
           "answer": "Everywhere.",
           "comment": "Everywhere."
@@ -56,12 +60,22 @@
       "subtitle": "Questions about the website",
       "questions": [
         {
-          "question": "Why are there exactly 150 pictures?",
-          "answer": "100 didn't quite capture the full range of Jeff's personality.\n200 would have been too overwhelming to discover all of.",
-          "comment": "151 would have just been silly."
+          "question": "Is this entire website really dedicated to... a cat?",
+          "answer": "Yeah. It is.",
+          "comment": "I've been told that cats practically run the internet. Are you surprised?"
         },
         {
-          "question": "Will you add more pictures?",
+          "question": "Are you tracking me?",
+          "answer": "I monitor how many times particular pages are visited and interacted with. Besides that? Nope.",
+          "comment": "I've been following your scent since you got here. Do you have any treats?"
+        },
+        {
+          "question": "Why are there exactly 150 pictures?",
+          "answer": "Originally, there were only 100. But they didn't quite capture the full range of Jeff's personality.\n\n200 would have been too overwhelming to discover all of, but there are even more than that in my personal Jeff trove.",
+          "comment": "151 of them would just be silly. Who would collect 151 of something?"
+        },
+        {
+          "question": "Will more pictures be added later?",
           "answer": "Probably not. The website has limited storage, and Jeff's complete photographic archive could threaten the structural integrity of this webpage. A webpage which is loosely held together with masking tape, magic, and cat hair.\n\n...a LOT of cat hair.",
           "comment": "I have a strict licensing agreement that was set up by my lawyers. The humans need to abide by it."
         },
@@ -85,14 +99,15 @@
           "comment": "If you get too close without my permission, I'll exercise my right to fight-or-flight."
         },
         {
+          "question": "Is there a deeper meaning or secret to this website?",
+          "answer": "No, not really. I just made this website so everybody can get the chance to... you know. \"Meet Jeff.\"",
+          "comment": "meOwMEOWmEOWMeoWmEOwmEoWmEOWmeOW? Listen closely to my V01CE."
+        }
+        {
           "question": "What happens when I find all 150 pictures?",
           "answer": "You don't expect me to spoil the ending, do you?"
         },
-        {
-          "question": "Is there a deeper meaning or secret to this website?",
-          "answer": "No, not really. I just made this website so everybody can get the chance to... you know. \"Meet Jeff.\"",
-          "comment": "meOwMEOWmEOWMeoWmEOwmEoWmEOWmeOW?"
-        }
+
       ]
     },
     {
@@ -101,13 +116,28 @@
       "subtitle": "Questions about the humans behind the page",
       "questions": [
         {
-          "question": "Does Jeff know about this website?",
-          "answer": "Yes, he has been informed. When I disclosed the project to him, he stared at me for several seconds and then left the room.",
-          "comment": "I can neither confirm nor deny my approval of this violation of my privacy."
+          "question": "What can you tell us about Jeff's humans?"
+          "answer": "Jeff lives in a home with three humans. One is my mother, the second is my brother, and the third is my grandmother. Each time I come to visit, I try to take a new picture of Jeff. This website is a compilation of many of these photos.",
+          "comment": "They feed me, and give me the attention I deserve. What else do you really need to know?"
         },
         {
-          "question": "Did Jeff approve these pictures?",
-          "answer": "Jeff was given several opportunities to comment. He responded by flopping onto his back and rolling around for a moment or two."
+          "question": "Who takes Jeff's pictures?",
+          "answer": "I've taken most of these photos. A few were sourced from family."
+        },
+        {
+          "question": "Why aren't Jeff's humans featured in his images?",
+          "answer": "We don't think that Jeff is ready to share the spotlight. Besides, this website is dedicated to Jeff, not us!",
+          "comment": "And yet you call ME shy..."
+        },
+        {
+          "question": "Who made this website?",
+          "answer": "Me!",
+          "comment": "Him!"
+        },
+        {
+          "question": "Did you tell Jeff about this website?",
+          "answer": "Yes, he has been informed. When I disclosed the project to him, he stared at me for several seconds and then left the room.",
+          "comment": "I can neither confirm nor deny my approval of this violation of my privacy."
         },
         {
           "question": "Why are there \"Meet Jeff\" stickers?",
@@ -118,15 +148,6 @@
           "answer": "Whoops... sorry about that. Carefully lift a corner with your fingernail or a plastic edge and peel slowly. If appropriate for the surface, gentle heat may help loosen the adhesive. If residue remains, use a surface-appropriate adhesive remover or isopropyl alcohol only after testing it in an inconspicuous area.",
           "comment": "Pesky vandals."
         },
-        {
-          "question": "Who takes Jeff's pictures?",
-          "answer": "I've taken most of these photos. A few were sourced from family, and a few are scanned from genuine Polaroid photos."
-        },
-        {
-          "question": "Who made this website?",
-          "answer": "Me. One of Jeff's caretakers.",
-          "comment": "And you call ME shy..."
-        }
       ]
     }
   ]
