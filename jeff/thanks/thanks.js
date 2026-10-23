@@ -29,9 +29,6 @@
   root.classList.toggle("thanks-first-visit", firstVisit);
   root.classList.toggle("thanks-return-visit", !firstVisit);
   root.classList.toggle("thanks-dark", !firstVisit);
-  const motionPreference = stored("reducedMotionPreference");
-  root.classList.toggle("reduced-motion", motionPreference === "true" ||
-    (motionPreference === null && window.matchMedia("(prefers-reduced-motion: reduce)").matches));
 
   function initialize() {
     const video = document.getElementById("thanks-video");
@@ -41,12 +38,26 @@
     const status = document.getElementById("thanks-status");
     const error = document.getElementById("thanks-error");
     const menuToggle = document.getElementById("site-menu-toggle");
+    const musicCredit = document.getElementById("thanks-music-credit");
     let started = false;
+    let creditShown = false;
     let lastPosition = 0;
     let correctingSeek = false;
     let changingSource = false;
     let sourceRequest = 0;
     let startRequest = 0;
+
+    function showPlayButton() {
+      playButton.textContent = "PLAY";
+      playButton.setAttribute("aria-label", started ? "Resume Jeff's movie" : "Play Jeff's movie");
+      playButton.disabled = false;
+      playButton.hidden = false;
+    }
+
+    function revealPlayer() {
+      void playButton.offsetWidth;
+      player.classList.add("is-visible");
+    }
 
     function setMenuLocked(locked) {
       if (locked && root.classList.contains("site-menu-open")) menuToggle?.click();
@@ -97,8 +108,7 @@
         if (request !== startRequest || changingSource) return;
         if (video.error) showError();
         else {
-          playButton.hidden = false;
-          playButton.textContent = started ? "Resume video" : "Play Jeff's movie";
+          showPlayButton();
           status.textContent = "Tap Play to start or resume Jeff's movie.";
           // A rejected play attempt must never leave navigation locked.
           setMenuLocked(false);
@@ -120,7 +130,7 @@
       correctingSeek = false;
       error.hidden = true;
       playButton.disabled = false;
-      playButton.hidden = !firstVisit || started;
+      playButton.hidden = started;
       status.textContent = "Loading Jeff's movie…";
       video.src = source;
 
@@ -134,10 +144,7 @@
           lastPosition = position;
           status.textContent = "";
           if (resumePlayback) void play();
-          else if (firstVisit) {
-            playButton.textContent = started ? "Resume video" : "Play Jeff's movie";
-            playButton.hidden = false;
-          }
+          else if (!started || firstVisit) showPlayButton();
         };
         if (position > 0) {
           video.addEventListener("seeked", restored, { once: true });
@@ -149,10 +156,24 @@
 
     video.addEventListener("playing", () => {
       started = true;
+      root.classList.add("thanks-has-played");
+      video.removeAttribute("aria-hidden");
       playButton.hidden = true;
       playButton.disabled = false;
       status.textContent = "";
       if (firstVisit) setMenuLocked(true);
+      if (!creditShown) {
+        creditShown = true;
+        musicCredit.hidden = false;
+        musicCredit.setAttribute("aria-hidden", "false");
+        musicCredit.classList.add("is-showing");
+      }
+    });
+
+    musicCredit.addEventListener("animationend", event => {
+      if (event.target !== musicCredit || event.animationName !== "thanks-music-credit") return;
+      musicCredit.hidden = true;
+      musicCredit.setAttribute("aria-hidden", "true");
     });
 
     video.addEventListener("timeupdate", () => {
@@ -176,9 +197,7 @@
 
     video.addEventListener("pause", () => {
       if (!firstVisit || !started || video.ended || video.error || changingSource) return;
-      playButton.disabled = false;
-      playButton.textContent = "Resume video";
-      playButton.hidden = false;
+      showPlayButton();
     });
     video.addEventListener("waiting", () => {
       if (started && error.hidden) status.textContent = "Buffering Jeff's movie…";
@@ -210,9 +229,9 @@
     applyControls();
     loadVideo();
     root.classList.remove("thanks-pending");
-    if (!firstVisit || root.classList.contains("reduced-motion")) {
+    if (!firstVisit) {
       root.classList.add("thanks-dark");
-      player.classList.add("is-visible");
+      revealPlayer();
       return;
     }
 
@@ -220,7 +239,7 @@
     requestAnimationFrame(() => requestAnimationFrame(() => {
       root.classList.add("thanks-dark");
       const duration = parseFloat(getComputedStyle(document.body).transitionDuration) * 1000;
-      window.setTimeout(() => player.classList.add("is-visible"), duration + 50);
+      window.setTimeout(revealPlayer, duration + 50);
     }));
   }
 

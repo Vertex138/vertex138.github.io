@@ -9,6 +9,7 @@
   <link rel="icon" href="/jeff/icons/favicon.ico" sizes="any">
   <link rel="icon" type="image/png" sizes="32x32" href="/jeff/icons/favicon-32x32.png">
   <link rel="apple-touch-icon" sizes="180x180" href="/jeff/icons/apple-touch-icon.png">
+  <link rel="preload" href="/jeff/fonts/SuperBouncer.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/jeff/menu/site-menu.css">
   <link rel="stylesheet" href="/jeff/thanks/thanks.css">
   <script src="/jeff/menu/site-menu.js" defer></script>
@@ -19,11 +20,12 @@
   <main id="thanks-page" aria-label="A thank-you from Jeff">
     <div id="thanks-player">
       <div id="thanks-video-area">
-        <video id="thanks-video" playsinline preload="metadata" aria-label="Jeff's thank-you movie">
+        <video id="thanks-video" playsinline preload="metadata" aria-label="Jeff's thank-you movie" aria-hidden="true">
           Your browser cannot play this video.
         </video>
-        <button id="thanks-play" type="button" hidden>Play Jeff's movie</button>
+        <button id="thanks-play" type="button" aria-label="Play Jeff's movie" hidden>PLAY</button>
       </div>
+      <p id="thanks-music-credit" aria-hidden="true" hidden>“My Little One”, from “Melodramatic” ‧ Siamés (2024)</p>
       <p id="thanks-status" role="status" aria-live="polite"></p>
       <div id="thanks-error" role="alert" hidden>
         <p>Jeff's movie couldn't load. Let's try that again.</p>
