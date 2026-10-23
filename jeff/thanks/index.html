@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en" class="thanks-pending">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Thank you! — Meet Jeff</title>
+  <style>html.thanks-pending { visibility: hidden; }</style>
+  <script src="/jeff/thanks/thanks.js"></script>
+  <link rel="icon" href="/jeff/icons/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="/jeff/icons/favicon-32x32.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/jeff/icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="/jeff/menu/site-menu.css">
+  <link rel="stylesheet" href="/jeff/thanks/thanks.css">
+  <script src="/jeff/menu/site-menu.js" defer></script>
+  <noscript><style>html.thanks-pending { visibility: visible; } #thanks-page { display: none; }</style></noscript>
+</head>
+<body>
+  <noscript><p>Please enable JavaScript to watch Jeff's movie. <a href="/jeff/">Meet Jeff</a></p></noscript>
+  <main id="thanks-page" aria-label="A thank-you from Jeff">
+    <div id="thanks-player">
+      <div id="thanks-video-area">
+        <video id="thanks-video" playsinline preload="metadata" aria-label="Jeff's thank-you movie">
+          Your browser cannot play this video.
+        </video>
+        <button id="thanks-play" type="button" hidden>Play Jeff's movie</button>
+      </div>
+      <p id="thanks-status" role="status" aria-live="polite"></p>
+      <div id="thanks-error" role="alert" hidden>
+        <p>Jeff's movie couldn't load. Let's try that again.</p>
+        <button id="thanks-retry" type="button">RETRY</button>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

@@ -17,6 +17,7 @@
     fortuneIntro: "fortuneIntroViewed",
     fortuneCooldown: "fortuneCooldownUntil",
     fortunes: "fortuneState",
+    thanks: "thanksFirstViewComplete",
   };
 
   const MENU_LINKS = [
@@ -608,6 +609,7 @@
       localStorage.removeItem(STORAGE_KEYS.fortuneIntro);
       localStorage.removeItem(STORAGE_KEYS.fortuneCooldown);
       localStorage.removeItem(STORAGE_KEYS.fortunes);
+      localStorage.removeItem(STORAGE_KEYS.thanks);
       localStorage.removeItem("menuUnlockNoticeLevel");
 
       hideUnlockNotice();
