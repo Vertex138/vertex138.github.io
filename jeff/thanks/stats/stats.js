@@ -31,7 +31,9 @@
     function formatDate(timestamp) {
       const d = new Date(timestamp);
       const two = value => String(value).padStart(2, "0");
-      return `${two(d.getMonth() + 1)} ${two(d.getDate())}, ${d.getFullYear()} at ${two(d.getHours())}:${two(d.getMinutes())}`;
+      const month = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"][d.getMonth()];
+      const hour = d.getHours();
+      return `${month} ${two(d.getDate())}, ${d.getFullYear()} at ${hour % 12 || 12}:${two(d.getMinutes())} ${hour < 12 ? "AM" : "PM"}`;
     }
 
     function fitText() {
