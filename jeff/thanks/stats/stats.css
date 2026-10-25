@@ -1,0 +1,54 @@
+@font-face {
+  font-family: "Super Bouncer";
+  src: url("/jeff/fonts/SuperBouncer.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --stats-font: "Super Bouncer", Tahoma, sans-serif;
+  --stats-line-size: clamp(17px, 2.4vw, 25px);
+  --stats-title-size: clamp(32px, 6vw, 64px);
+}
+
+html.simplified-font { --stats-font: Tahoma, sans-serif; }
+html, body { margin: 0; width: 100%; min-height: 100%; overflow-x: hidden; }
+body { background: #E6D79E; color: #171717; }
+
+#stats-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  box-sizing: border-box;
+  padding: calc(max(2vh, env(safe-area-inset-top, 0px)) + clamp(44px, 6vh, 58px) + 24px)
+    max(5vw, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px))
+    max(18px, env(safe-area-inset-bottom, 0px));
+  font-family: var(--stats-font);
+  font-size: var(--stats-line-size);
+  line-height: 1.25;
+}
+
+#stats-header, #stats-list, #stats-footer { width: min(100%, 1100px); box-sizing: border-box; }
+#stats-header { text-align: center; margin-bottom: clamp(20px, 4vh, 40px); }
+#stats-header h1 {
+  width: 100%;
+  margin: 0;
+  font-family: var(--page-font, "Matcha Mint", Tahoma, sans-serif);
+  font-size: var(--stats-title-size);
+  font-weight: normal;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+#stats-history-note { margin: 16px 0 0; font-size: 0.72em; color: #484848; }
+#stats-list { list-style: none; margin: 0; padding: 0; }
+.stat-row { display: flex; justify-content: space-between; align-items: baseline; gap: 24px; padding: 10px 0; }
+.stat-phrase, .stat-date { display: block; flex: 0 0 auto; width: max-content; margin: 0; white-space: nowrap; }
+.stat-date { color: #484848; font-variant-numeric: tabular-nums; }
+html.stats-portrait .stat-row { display: grid; justify-content: start; gap: 8px; padding: 12px 0; border-bottom: 1px solid #17171766; }
+#stats-footer { margin-top: auto; padding-top: clamp(28px, 5vh, 48px); text-align: center; font-size: 0.78em; }
+#stats-puzzle-status { margin: 0; overflow-wrap: anywhere; }
+[hidden] { display: none !important; }

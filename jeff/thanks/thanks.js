@@ -39,6 +39,8 @@
     const error = document.getElementById("thanks-error");
     const menuToggle = document.getElementById("site-menu-toggle");
     const musicCredit = document.getElementById("thanks-music-credit");
+    const statsLink = document.getElementById("thanks-stats-link");
+    const messageArea = document.getElementById("thanks-message-area");
     let started = false;
     let creditShown = false;
     let lastPosition = 0;
@@ -46,6 +48,27 @@
     let changingSource = false;
     let sourceRequest = 0;
     let startRequest = 0;
+
+    function showStatsButton() {
+      if (!video.ended || !musicCredit.hidden || status.textContent) return;
+      statsLink.hidden = false;
+      void statsLink.offsetWidth;
+      root.classList.add("thanks-stats-ready");
+    }
+
+    function setNotice(message = "") {
+      status.textContent = message;
+      if (message) hideStatsButton();
+      root.classList.toggle("thanks-notice-active", Boolean(message));
+      musicCredit.setAttribute("aria-hidden", String(Boolean(message) || musicCredit.hidden));
+      messageArea.hidden = !message && musicCredit.hidden;
+      showStatsButton();
+    }
+
+    function hideStatsButton() {
+      statsLink.hidden = true;
+      root.classList.remove("thanks-stats-ready");
+    }
 
     function showPlayButton() {
       playButton.textContent = "PLAY";
@@ -85,7 +108,7 @@
       root.classList.remove("thanks-first-visit");
       root.classList.add("thanks-return-visit");
       playButton.hidden = true;
-      status.textContent = "";
+      setNotice();
       applyControls();
       setMenuLocked(false);
     }
@@ -95,7 +118,7 @@
       changingSource = false;
       error.hidden = false;
       playButton.hidden = true;
-      status.textContent = "";
+      setNotice();
       setMenuLocked(false);
     }
 
@@ -109,7 +132,7 @@
         if (video.error) showError();
         else {
           showPlayButton();
-          status.textContent = "Tap Play to start or resume Jeff's movie.";
+          setNotice("Tap Play to start or resume Jeff's movie.");
           // A rejected play attempt must never leave navigation locked.
           setMenuLocked(false);
         }
@@ -131,7 +154,7 @@
       error.hidden = true;
       playButton.disabled = false;
       playButton.hidden = started;
-      status.textContent = "Loading Jeff's movie…";
+      setNotice("Loading Jeff's movie…");
       video.src = source;
 
       video.addEventListener("loadedmetadata", () => {
@@ -142,7 +165,7 @@
           if (request !== sourceRequest) return;
           changingSource = false;
           lastPosition = position;
-          status.textContent = "";
+          if (!resumePlayback) setNotice();
           if (resumePlayback) void play();
           else if (!started || firstVisit) showPlayButton();
         };
@@ -156,15 +179,17 @@
 
     video.addEventListener("playing", () => {
       started = true;
+      hideStatsButton();
       root.classList.add("thanks-has-played");
       video.removeAttribute("aria-hidden");
       playButton.hidden = true;
       playButton.disabled = false;
-      status.textContent = "";
+      setNotice();
       if (firstVisit) setMenuLocked(true);
       if (!creditShown) {
         creditShown = true;
         musicCredit.hidden = false;
+        messageArea.hidden = false;
         musicCredit.setAttribute("aria-hidden", "false");
         musicCredit.classList.add("is-showing");
       }
@@ -174,6 +199,7 @@
       if (event.target !== musicCredit || event.animationName !== "thanks-music-credit") return;
       musicCredit.hidden = true;
       musicCredit.setAttribute("aria-hidden", "true");
+      setNotice(status.textContent);
     });
 
     video.addEventListener("timeupdate", () => {
@@ -200,11 +226,17 @@
       showPlayButton();
     });
     video.addEventListener("waiting", () => {
-      if (started && error.hidden) status.textContent = "Buffering Jeff's movie…";
+      if (error.hidden) setNotice("Buffering Jeff's movie…");
+    });
+    video.addEventListener("canplay", () => {
+      if (!changingSource && error.hidden) setNotice();
     });
     video.addEventListener("error", showError);
     video.addEventListener("ended", () => {
-      if (!changingSource && !correctingSeek) finishFirstView();
+      if (!changingSource && !correctingSeek) {
+        finishFirstView();
+        showStatsButton();
+      }
     });
     video.addEventListener("contextmenu", event => {
       if (firstVisit) event.preventDefault();

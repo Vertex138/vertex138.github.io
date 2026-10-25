@@ -18,6 +18,7 @@
     fortuneCooldown: "fortuneCooldownUntil",
     fortunes: "fortuneState",
     thanks: "thanksFirstViewComplete",
+    stats: "jeffMilestones",
   };
 
   const MENU_LINKS = [
@@ -55,6 +56,7 @@
   );
 
   let forceNewReady = !document.getElementById("random-image");
+  let milestoneTracker = null;
 
   function menuLinkMarkup({ label, href, required, hidden }) {
     const initialLabel = hidden && required > 0 ? "? ? ? ? ? ? ?" : label;
@@ -342,6 +344,112 @@
     }
   }
 
+  function createMilestoneTracker() {
+    const ids = ["arrived", "gallery", "mood", "faq", "kitchen", "fortune",
+      "mailbox", "ending", "puzzleFound", "puzzleFinished"];
+    const routes = [
+      ["mood", "/jeff/mood", "mood-page", 20],
+      ["faq", "/jeff/faq", "faq-page", 40],
+      ["kitchen", "/jeff/biscuits", "biscuits-page", 60],
+      ["mailbox", "/jeff/contact", "mailbox-page", 100],
+      ["ending", "/jeff/thanks", "thanks-page", 150],
+    ];
+    const cleanPath = path => path.replace(/\/+$/, "");
+    const requirementFor = (path, fallback) =>
+      MENU_LINKS.find(link => cleanPath(link.href) === path)?.required ?? fallback;
+    const required = Object.fromEntries(routes.map(([id, path, , fallback]) =>
+      [id, requirementFor(path, fallback)]));
+    required.gallery = requirementFor("/jeff/gallery", 5);
+    required.fortune = requirementFor("/jeff/fortune", 80);
+    const isTimestamp = value => Number.isFinite(value) && value > 0 && value <= 8.64e15;
+
+    function read() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEYS.stats) || "null");
+        if (!saved || saved.version !== 1 || !isTimestamp(saved.startedAt)) return null;
+        return {
+          version: 1,
+          startedAt: saved.startedAt,
+          legacy: saved.legacy === true,
+          unavailable: Array.isArray(saved.unavailable)
+            ? saved.unavailable.filter(id => ids.includes(id)) : [],
+          dates: Object.fromEntries(ids.map(id => {
+            const value = saved.dates?.[id];
+            return [id, isTimestamp(value) ? value : null];
+          })),
+        };
+      } catch { return null; }
+    }
+
+    function save(value) {
+      try {
+        localStorage.setItem(STORAGE_KEYS.stats, JSON.stringify(value));
+      } catch (error) {
+        console.warn("Could not save Jeff's milestones:", error);
+      }
+      document.dispatchEvent(new CustomEvent("jeff:stats-changed"));
+      return value;
+    }
+
+    function initialize(fresh = false) {
+      if (!fresh) {
+        const existing = read();
+        if (existing) return existing;
+      }
+      const now = Date.now();
+      const value = {
+        version: 1, startedAt: now, legacy: false, unavailable: [],
+        dates: Object.fromEntries(ids.map(id => [id, null])),
+      };
+      if (!fresh) {
+        try {
+          const count = getViewedImageCount();
+          value.legacy = count > 0 ||
+            localStorage.getItem(STORAGE_KEYS.introduction) !== null ||
+            localStorage.getItem(STORAGE_KEYS.recent) !== null;
+          if (value.legacy) value.unavailable.push("arrived");
+          if (count >= required.gallery) value.unavailable.push("gallery");
+          if (localStorage.getItem(STORAGE_KEYS.thanks) === "true") value.unavailable.push("ending");
+          const fortune = JSON.parse(localStorage.getItem(STORAGE_KEYS.fortunes) || "null");
+          if (fortune?.last) value.unavailable.push("fortune");
+        } catch {
+          value.legacy = true;
+          value.unavailable.push("arrived");
+        }
+      }
+      if (!value.legacy) value.dates.arrived = now;
+      return save(value);
+    }
+
+    function record(id) {
+      if (!ids.includes(id)) return false;
+      const value = read() || initialize();
+      if (value.dates[id] || value.unavailable.includes(id)) return false;
+      if (getViewedImageCount() < (required[id] || 0)) return false;
+      value.dates[id] = Date.now();
+      if (id === "puzzleFinished" && !value.dates.puzzleFound) {
+        value.dates.puzzleFound = value.dates[id];
+      }
+      save(value);
+      return true;
+    }
+
+    function trackPage() {
+      const path = cleanPath(window.location.pathname);
+      const route = routes.find(([, href, element]) =>
+        path === href && document.getElementById(element));
+      if (route) record(route[0]);
+    }
+
+    initialize();
+    window.addEventListener("storage", event => {
+      if (event.key === STORAGE_KEYS.stats || event.key === null) {
+        document.dispatchEvent(new CustomEvent("jeff:stats-changed"));
+      }
+    });
+    return { read, record, trackPage, reset: () => initialize(true) };
+  }
+
   function getStoredUnlockLevel(key) {
     try {
       const savedLevel = Number(localStorage.getItem(key));
@@ -469,6 +577,7 @@
 
   function refreshProgress() {
     const viewedCount = getViewedImageCount();
+    milestoneTracker?.record("gallery");
 
     document.querySelectorAll("[data-unlock]").forEach((link) => {
       const required = Number(link.dataset.unlock);
@@ -611,6 +720,7 @@
       localStorage.removeItem(STORAGE_KEYS.fortunes);
       localStorage.removeItem(STORAGE_KEYS.thanks);
       localStorage.removeItem("menuUnlockNoticeLevel");
+      milestoneTracker.reset();
 
       hideUnlockNotice();
 
@@ -741,11 +851,13 @@
     }
   });
 
+  milestoneTracker = createMilestoneTracker();
   applyAccessibilitySettings();
   root.classList.toggle("data-saver", dataSaverEnabled());
   refreshProgress();
 
   window.JeffSite = Object.freeze({
+    stats: Object.freeze({ read: milestoneTracker.read, record: milestoneTracker.record }),
     reducedMotionEnabled: () => root.classList.contains("reduced-motion"),
     dataSaverEnabled,
     dataSaverUrl,
@@ -770,4 +882,5 @@
       refreshProgress();
     },
   });
+  milestoneTracker.trackPage();
 })();

@@ -838,6 +838,7 @@
       saveFortuneButton.download = fortuneDownloadName(filename);
       viewerControls.hidden = false;
       phase = "viewing";
+      window.JeffSite?.stats?.record("fortune");
       closeFortuneButton.focus({ preventScroll: true });
     }
 

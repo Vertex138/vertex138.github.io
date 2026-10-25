@@ -25,8 +25,13 @@
         </video>
         <button id="thanks-play" type="button" aria-label="Play Jeff's movie" hidden>PLAY</button>
       </div>
-      <p id="thanks-music-credit" aria-hidden="true" hidden>“My Little One”, from “Melodramatic” ‧ Siamés (2024)</p>
-      <p id="thanks-status" role="status" aria-live="polite"></p>
+      <div id="thanks-after-video">
+        <div id="thanks-message-area" hidden>
+          <p id="thanks-music-credit" aria-hidden="true" hidden>“My Little One”, from “Melodramatic” ‧ Siamés (2024)</p>
+          <p id="thanks-status" role="status" aria-live="polite"></p>
+        </div>
+        <a id="thanks-stats-link" href="/jeff/thanks/stats/" hidden>Your stats</a>
+      </div>
       <div id="thanks-error" role="alert" hidden>
         <p>Jeff's movie couldn't load. Let's try that again.</p>
         <button id="thanks-retry" type="button">RETRY</button>

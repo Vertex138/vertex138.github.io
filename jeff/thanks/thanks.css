@@ -12,6 +12,7 @@
   --thanks-player-duration: 0.8s;
   --thanks-credit-font: "Super Bouncer", Tahoma, sans-serif;
   --thanks-credit-gap: clamp(4px, 1.2vh, 12px);
+  --thanks-stats-space: calc(48px + var(--thanks-credit-gap) + max(12px, env(safe-area-inset-bottom, 0px)));
 }
 
 html.simplified-font { --thanks-credit-font: Tahoma, sans-serif; }
@@ -51,6 +52,10 @@ html.thanks-return-visit body { transition: none; }
 }
 
 #thanks-player.is-visible { visibility: visible; }
+html.thanks-stats-ready #thanks-player {
+  width: min(100vw, 120vh, calc((100vh - 2 * var(--thanks-stats-space)) * 1.5));
+  width: min(100vw, 120dvh, calc((100dvh - 2 * var(--thanks-stats-space)) * 1.5));
+}
 #thanks-video-area { position: relative; width: 100%; aspect-ratio: 3 / 2; }
 
 #thanks-video {
@@ -102,12 +107,23 @@ html.thanks-first-visit #thanks-video { pointer-events: none; }
   outline-offset: 4px;
 }
 
-#thanks-music-credit {
+#thanks-after-video {
   position: absolute;
   top: calc(100% + var(--thanks-credit-gap));
   left: 50%;
   transform: translateX(-50%);
   width: min(94vw, 1100px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+#thanks-message-area { display: grid; width: 100%; }
+
+#thanks-music-credit, #thanks-status {
+  grid-area: 1 / 1;
+  width: 100%;
   margin: 0;
   color: white;
   font-family: var(--thanks-credit-font);
@@ -115,18 +131,43 @@ html.thanks-first-visit #thanks-video { pointer-events: none; }
   font-size: clamp(12px, min(2.4vw, 3.5dvh), 22px);
   font-weight: normal;
   line-height: 1.25;
-  opacity: 0;
   pointer-events: none;
 }
 
+#thanks-music-credit { opacity: 0; }
 #thanks-music-credit.is-showing { animation: thanks-music-credit 17s linear forwards; }
+html.thanks-notice-active #thanks-music-credit { visibility: hidden; animation-play-state: paused; }
+
+#thanks-stats-link {
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  min-width: min(78vw, 330px);
+  min-height: 48px;
+  padding: 8px 24px;
+  border: 2px solid rgba(255, 255, 255, 0.82);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.78);
+  color: white;
+  font: inherit;
+  font-size: clamp(17px, 3.8vmin, 24px);
+  line-height: 1.1;
+  text-decoration: none;
+  cursor: pointer;
+  touch-action: manipulation;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+
+html.thanks-stats-ready #thanks-stats-link { opacity: 1; }
+#thanks-stats-link:hover, #thanks-stats-link:focus-visible { background: rgba(255, 255, 255, 0.16); }
 
 @keyframes thanks-music-credit {
   0%, 100% { opacity: 0; }
   5.882353%, 94.117647% { opacity: 1; }
 }
 
-#thanks-status, #thanks-error {
+#thanks-error {
   position: absolute;
   left: 0;
   right: 0;
@@ -136,7 +177,6 @@ html.thanks-first-visit #thanks-video { pointer-events: none; }
   line-height: 1.4;
 }
 
-#thanks-status { bottom: 12px; padding: 0 12px; text-shadow: 0 1px 3px black; }
 #thanks-status:empty { display: none; }
 #thanks-error { inset: 0; z-index: 3; display: grid; place-content: center; padding: 20px; background: #000e; }
 #thanks-error p { margin: 0 0 16px; }
