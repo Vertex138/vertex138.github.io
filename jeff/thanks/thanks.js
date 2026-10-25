@@ -41,6 +41,7 @@
     const musicCredit = document.getElementById("thanks-music-credit");
     const statsLink = document.getElementById("thanks-stats-link");
     const messageArea = document.getElementById("thanks-message-area");
+    const afterVideo = document.getElementById("thanks-after-video");
     let started = false;
     let creditShown = false;
     let lastPosition = 0;
@@ -50,24 +51,26 @@
     let startRequest = 0;
 
     function showStatsButton() {
-      if (!video.ended || !musicCredit.hidden || status.textContent) return;
+      if (firstVisit || !statsLink.hidden) return;
       statsLink.hidden = false;
       void statsLink.offsetWidth;
       root.classList.add("thanks-stats-ready");
     }
 
+    function fitPlayer() {
+      const height = afterVideo.getBoundingClientRect().height;
+      root.style.setProperty("--thanks-footer-space", height
+        ? `calc(${height}px + var(--thanks-credit-gap) + max(12px, env(safe-area-inset-bottom, 0px)))`
+        : "0px");
+    }
+
     function setNotice(message = "") {
       status.textContent = message;
-      if (message) hideStatsButton();
       root.classList.toggle("thanks-notice-active", Boolean(message));
       musicCredit.setAttribute("aria-hidden", String(Boolean(message) || musicCredit.hidden));
       messageArea.hidden = !message && musicCredit.hidden;
       showStatsButton();
-    }
-
-    function hideStatsButton() {
-      statsLink.hidden = true;
-      root.classList.remove("thanks-stats-ready");
+      fitPlayer();
     }
 
     function showPlayButton() {
@@ -179,7 +182,6 @@
 
     video.addEventListener("playing", () => {
       started = true;
-      hideStatsButton();
       root.classList.add("thanks-has-played");
       video.removeAttribute("aria-hidden");
       playButton.hidden = true;
@@ -192,6 +194,7 @@
         messageArea.hidden = false;
         musicCredit.setAttribute("aria-hidden", "false");
         musicCredit.classList.add("is-showing");
+        fitPlayer();
       }
     });
 
@@ -257,6 +260,10 @@
       }
       if (event.key === VISIT_KEY && event.newValue === "true") finishFirstView();
     });
+
+    if (window.ResizeObserver) new ResizeObserver(fitPlayer).observe(afterVideo);
+    window.addEventListener("resize", fitPlayer);
+    document.fonts?.ready.then(fitPlayer);
 
     applyControls();
     loadVideo();
