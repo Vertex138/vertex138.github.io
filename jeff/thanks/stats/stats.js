@@ -2,13 +2,13 @@
   "use strict";
   const root = document.documentElement;
   const rows = [
-    ["arrived", "Jeff first noticed you"],
+    ["arrived", "You first met Jeff"],
     ["gallery", "You unlocked Jeff's photo album"],
     ["mood", "You checked Jeff's emotional forecast"],
-    ["faq", "You began questioning Jeff's staff"],
+    ["faq", "You began questioning Jeff and his staff"],
     ["kitchen", "You entered Jeff's biscuit business"],
     ["fortune", "Jeff revealed your first fortune"],
-    ["mailbox", "You opened Jeff's correspondence"],
+    ["mailbox", "Jeff opened his mailbox to you"],
     ["ending", "You made it to the final meow"],
   ];
 
