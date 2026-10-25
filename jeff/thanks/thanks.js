@@ -58,9 +58,11 @@
     }
 
     function fitPlayer() {
-      const height = afterVideo.getBoundingClientRect().height;
+      const messageHeight = afterVideo.getBoundingClientRect().height;
+      const buttonHeight = statsLink.hidden ? 0 : statsLink.getBoundingClientRect().height;
+      const height = messageHeight + buttonHeight + (messageHeight && buttonHeight ? 12 : 0);
       root.style.setProperty("--thanks-footer-space", height
-        ? `calc(${height}px + var(--thanks-credit-gap) + max(12px, env(safe-area-inset-bottom, 0px)))`
+        ? `calc(${height}px + var(--thanks-credit-gap) + var(--thanks-bottom-edge))`
         : "0px");
     }
 
@@ -261,7 +263,11 @@
       if (event.key === VISIT_KEY && event.newValue === "true") finishFirstView();
     });
 
-    if (window.ResizeObserver) new ResizeObserver(fitPlayer).observe(afterVideo);
+    if (window.ResizeObserver) {
+      const observer = new ResizeObserver(fitPlayer);
+      observer.observe(afterVideo);
+      observer.observe(statsLink);
+    }
     window.addEventListener("resize", fitPlayer);
     document.fonts?.ready.then(fitPlayer);
 
