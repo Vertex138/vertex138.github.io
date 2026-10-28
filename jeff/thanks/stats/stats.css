@@ -48,7 +48,32 @@ body { background: #E6D79E; color: #171717; }
 .stat-row { display: flex; justify-content: space-between; align-items: baseline; gap: 24px; padding: 10px 0; }
 .stat-phrase, .stat-date { display: block; flex: 0 0 auto; width: max-content; margin: 0; white-space: nowrap; }
 .stat-date { color: #484848; font-variant-numeric: tabular-nums; }
+.stat-row[data-milestone="journey"] { margin-top: 18px; border-top: 2px solid #17171766; padding-top: 20px; }
+.stat-row[data-milestone="journey"] .stat-date { color: #171717; }
 html.stats-portrait .stat-row { display: grid; justify-content: start; gap: 8px; padding: 12px 0; border-bottom: 1px solid #17171766; }
 #stats-footer { margin-top: auto; padding-top: clamp(28px, 5vh, 48px); text-align: center; font-size: 0.78em; }
 #stats-puzzle-status { margin: 0; overflow-wrap: anywhere; }
+#stats-home-link {
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  width: fit-content;
+  min-width: min(78vw, 330px);
+  max-width: 100%;
+  min-height: 48px;
+  margin: 24px auto 0;
+  padding: 8px 24px;
+  border: 2px solid rgba(255, 255, 255, 0.82);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.78);
+  color: white;
+  font-family: var(--page-font, "Matcha Mint", Tahoma, sans-serif);
+  font-size: clamp(17px, 3.8vmin, 24px);
+  line-height: 1.1;
+  text-decoration: none;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+#stats-home-link:hover, #stats-home-link:focus-visible { background: #171717; }
+#stats-home-link:focus-visible { outline: 3px solid #171717; outline-offset: 4px; }
 [hidden] { display: none !important; }

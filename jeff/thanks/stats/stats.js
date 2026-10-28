@@ -4,12 +4,12 @@
   const rows = [
     ["arrived", "You first met Jeff"],
     ["gallery", "You unlocked Jeff's photo album"],
-    ["mood", "You checked Jeff's emotional forecast"],
-    ["faq", "You began questioning Jeff and his staff"],
-    ["kitchen", "You entered Jeff's biscuit business"],
-    ["fortune", "Jeff revealed your first fortune"],
+    ["mood", "You unlocked Jeff's emotional forecast"],
+    ["faq", "Jeff and his staff agreed to questions"],
+    ["kitchen", "Jeff opened his biscuit business to you"],
+    ["fortune", "Jeff offered to tell your fortune"],
     ["mailbox", "Jeff opened his mailbox to you"],
-    ["ending", "You made it to the final meow"],
+    ["ending", "You unlocked the final meow"],
   ];
 
   function hasAccess() {
@@ -36,6 +36,32 @@
       return `${month} ${two(d.getDate())}, ${d.getFullYear()} at ${hour % 12 || 12}:${two(d.getMinutes())} ${hour < 12 ? "AM" : "PM"}`;
     }
 
+    function formatDuration(milliseconds) {
+      let seconds = Math.floor(milliseconds / 1000);
+      const parts = [];
+      for (const [name, size] of [["day", 86400], ["hour", 3600], ["minute", 60]]) {
+        const count = Math.floor(seconds / size);
+        seconds %= size;
+        if (count) parts.push(`${count.toLocaleString("en-US")} ${name}${count === 1 ? "" : "s"}`);
+      }
+      return parts.join(", ") || `${seconds} second${seconds === 1 ? "" : "s"}`;
+    }
+
+    function appendRow(id, phrase, value, timestamp) {
+      const row = document.createElement("li");
+      row.className = "stat-row";
+      row.dataset.milestone = id;
+      const label = document.createElement("span");
+      label.className = "stat-phrase";
+      label.textContent = phrase;
+      const detail = document.createElement(timestamp ? "time" : "span");
+      detail.className = "stat-date";
+      detail.textContent = value;
+      if (timestamp) detail.dateTime = new Date(timestamp).toISOString();
+      row.append(label, detail);
+      list.append(row);
+    }
+
     function fitText() {
       root.classList.toggle("stats-portrait", window.innerWidth < window.innerHeight);
       root.style.removeProperty("--stats-line-size");
@@ -59,24 +85,16 @@
 
     function render() {
       const stats = window.JeffSite?.stats?.read();
+      const missingDate = stats?.legacy ? "Not recorded" : "Not recorded yet";
       list.replaceChildren();
       for (const [id, phrase] of rows) {
-        const row = document.createElement("li");
-        row.className = "stat-row";
-        row.dataset.milestone = id;
-        const label = document.createElement("span");
-        label.className = "stat-phrase";
-        label.textContent = phrase;
-        const date = document.createElement("time");
-        date.className = "stat-date";
         const timestamp = stats?.dates[id];
-        if (timestamp) {
-          date.dateTime = new Date(timestamp).toISOString();
-          date.textContent = formatDate(timestamp);
-        } else date.textContent = stats?.legacy ? "Not recorded" : "Not recorded yet";
-        row.append(label, date);
-        list.append(row);
+        appendRow(id, phrase, timestamp ? formatDate(timestamp) : missingDate, timestamp);
       }
+      const start = stats?.dates.arrived;
+      const end = stats?.dates.ending;
+      appendRow("journey", "Your journey with Jeff lasted", start && end && end >= start
+        ? formatDuration(end - start) : missingDate);
       note.hidden = !stats?.legacy;
       puzzleStatus.textContent = stats?.dates.puzzleFinished
         ? "...and you even finished the hidden puzzle!"

@@ -28,23 +28,26 @@
       href: "/jeff/gallery",
       required: 5,
       hidden: false,
+      milestone: "gallery",
     },
-    { label: "Jeff's Mood", href: "/jeff/mood", required: 20, hidden: true },
-    { label: "Jeff's FAQ", href: "/jeff/faq", required: 40, hidden: true },
-    { label: "Help Jeff?", href: "/jeff/help", required: 60, hidden: true },
+    { label: "Jeff's Mood", href: "/jeff/mood", required: 20, hidden: true, milestone: "mood" },
+    { label: "Jeff's FAQ", href: "/jeff/faq", required: 40, hidden: true, milestone: "faq" },
+    { label: "Help Jeff?", href: "/jeff/help", required: 60, hidden: true, milestone: "kitchen" },
     {
       label: "Jeff's Fortune",
       href: "/jeff/fortune",
       required: 80,
       hidden: true,
+      milestone: "fortune",
     },
     {
       label: "Jeff's Mailbox",
       href: "/jeff/contact",
       required: 100,
       hidden: true,
+      milestone: "mailbox",
     },
-    { label: "Thank you!", href: "/jeff/thanks", required: 150, hidden: false },
+    { label: "Thank you!", href: "/jeff/thanks", required: 150, hidden: false, milestone: "ending" },
   ];
 
   const UNLOCK_LEVELS = MENU_LINKS.map((link) => link.required).filter(
@@ -347,36 +350,24 @@
   function createMilestoneTracker() {
     const ids = ["arrived", "gallery", "mood", "faq", "kitchen", "fortune",
       "mailbox", "ending", "puzzleFound", "puzzleFinished"];
-    const routes = [
-      ["mood", "/jeff/mood", "mood-page", 20],
-      ["faq", "/jeff/faq", "faq-page", 40],
-      ["kitchen", "/jeff/biscuits", "biscuits-page", 60],
-      ["mailbox", "/jeff/contact", "mailbox-page", 100],
-      ["ending", "/jeff/thanks", "thanks-page", 150],
-    ];
-    const cleanPath = path => path.replace(/\/+$/, "");
-    const requirementFor = (path, fallback) =>
-      MENU_LINKS.find(link => cleanPath(link.href) === path)?.required ?? fallback;
-    const required = Object.fromEntries(routes.map(([id, path, , fallback]) =>
-      [id, requirementFor(path, fallback)]));
-    required.gallery = requirementFor("/jeff/gallery", 5);
-    required.fortune = requirementFor("/jeff/fortune", 80);
+    const unlocks = MENU_LINKS.filter(link => link.milestone)
+      .map(link => [link.milestone, link.required]);
     const isTimestamp = value => Number.isFinite(value) && value > 0 && value <= 8.64e15;
+    const cleanDates = dates => Object.fromEntries(ids.map(id =>
+      [id, isTimestamp(dates?.[id]) ? dates[id] : null]));
 
     function read() {
       try {
         const saved = JSON.parse(localStorage.getItem(STORAGE_KEYS.stats) || "null");
-        if (!saved || saved.version !== 1 || !isTimestamp(saved.startedAt)) return null;
+        if (!saved || ![1, 2].includes(saved.version) || !isTimestamp(saved.startedAt)) return null;
         return {
-          version: 1,
+          version: saved.version,
           startedAt: saved.startedAt,
           legacy: saved.legacy === true,
           unavailable: Array.isArray(saved.unavailable)
-            ? saved.unavailable.filter(id => ids.includes(id)) : [],
-          dates: Object.fromEntries(ids.map(id => {
-            const value = saved.dates?.[id];
-            return [id, isTimestamp(value) ? value : null];
-          })),
+            ? [...new Set(saved.unavailable.filter(id => ids.includes(id)))] : [],
+          dates: cleanDates(saved.dates),
+          previousVisits: cleanDates(saved.previousVisits),
         };
       } catch { return null; }
     }
@@ -392,26 +383,39 @@
     }
 
     function initialize(fresh = false) {
+      const existing = fresh ? null : read();
+      if (existing?.version === 2) return existing;
+      const count = fresh ? 0 : getViewedImageCount();
       if (!fresh) {
-        const existing = read();
-        if (existing) return existing;
+        if (existing) {
+          const unavailable = new Set(existing.unavailable);
+          for (const [id, required] of unlocks) {
+            if (id === "gallery" && existing.dates[id]) continue;
+            existing.previousVisits[id] = existing.dates[id];
+            existing.dates[id] = null;
+            if (count >= required) unavailable.add(id);
+            else unavailable.delete(id);
+          }
+          existing.version = 2;
+          existing.unavailable = [...unavailable];
+          existing.legacy ||= unavailable.size > 0;
+          return save(existing);
+        }
       }
       const now = Date.now();
       const value = {
-        version: 1, startedAt: now, legacy: false, unavailable: [],
-        dates: Object.fromEntries(ids.map(id => [id, null])),
+        version: 2, startedAt: now, legacy: false, unavailable: [],
+        dates: cleanDates(), previousVisits: cleanDates(),
       };
       if (!fresh) {
         try {
-          const count = getViewedImageCount();
           value.legacy = count > 0 ||
             localStorage.getItem(STORAGE_KEYS.introduction) !== null ||
             localStorage.getItem(STORAGE_KEYS.recent) !== null;
           if (value.legacy) value.unavailable.push("arrived");
-          if (count >= required.gallery) value.unavailable.push("gallery");
-          if (localStorage.getItem(STORAGE_KEYS.thanks) === "true") value.unavailable.push("ending");
-          const fortune = JSON.parse(localStorage.getItem(STORAGE_KEYS.fortunes) || "null");
-          if (fortune?.last) value.unavailable.push("fortune");
+          for (const [id, required] of unlocks) {
+            if (count >= required) value.unavailable.push(id);
+          }
         } catch {
           value.legacy = true;
           value.unavailable.push("arrived");
@@ -422,10 +426,9 @@
     }
 
     function record(id) {
-      if (!ids.includes(id)) return false;
-      const value = read() || initialize();
+      if (!["puzzleFound", "puzzleFinished"].includes(id)) return false;
+      const value = initialize();
       if (value.dates[id] || value.unavailable.includes(id)) return false;
-      if (getViewedImageCount() < (required[id] || 0)) return false;
       value.dates[id] = Date.now();
       if (id === "puzzleFinished" && !value.dates.puzzleFound) {
         value.dates.puzzleFound = value.dates[id];
@@ -434,20 +437,26 @@
       return true;
     }
 
-    function trackPage() {
-      const path = cleanPath(window.location.pathname);
-      const route = routes.find(([, href, element]) =>
-        path === href && document.getElementById(element));
-      if (route) record(route[0]);
+    function recordUnlocks(count) {
+      const value = initialize();
+      const now = Date.now();
+      let changed = false;
+      for (const [id, required] of unlocks) {
+        if (count < required || value.dates[id] || value.unavailable.includes(id)) continue;
+        value.dates[id] = now;
+        changed = true;
+      }
+      if (changed) save(value);
     }
 
     initialize();
     window.addEventListener("storage", event => {
+      if (event.key === STORAGE_KEYS.viewed || event.key === null) refreshProgress();
       if (event.key === STORAGE_KEYS.stats || event.key === null) {
         document.dispatchEvent(new CustomEvent("jeff:stats-changed"));
       }
     });
-    return { read, record, trackPage, reset: () => initialize(true) };
+    return { read, record, recordUnlocks, reset: () => initialize(true) };
   }
 
   function getStoredUnlockLevel(key) {
@@ -577,7 +586,7 @@
 
   function refreshProgress() {
     const viewedCount = getViewedImageCount();
-    milestoneTracker?.record("gallery");
+    milestoneTracker?.recordUnlocks(viewedCount);
 
     document.querySelectorAll("[data-unlock]").forEach((link) => {
       const required = Number(link.dataset.unlock);
@@ -882,5 +891,4 @@
       refreshProgress();
     },
   });
-  milestoneTracker.trackPage();
 })();
