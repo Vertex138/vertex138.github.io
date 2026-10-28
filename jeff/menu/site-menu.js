@@ -24,7 +24,7 @@
   const MENU_LINKS = [
     { label: "Meet Jeff", href: "/jeff/", required: 0, hidden: false },
     {
-      label: "Jeff Gallery",
+      label: "Jeff's Gallery",
       href: "/jeff/gallery",
       required: 5,
       hidden: false,
@@ -32,7 +32,7 @@
     },
     { label: "Jeff's Mood", href: "/jeff/mood", required: 20, hidden: true, milestone: "mood" },
     { label: "Jeff's FAQ", href: "/jeff/faq", required: 40, hidden: true, milestone: "faq" },
-    { label: "Help Jeff?", href: "/jeff/help", required: 60, hidden: true, milestone: "kitchen" },
+    { label: "Jeff's Biscuits", href: "/jeff/biscuits", required: 60, hidden: true, milestone: "kitchen" },
     {
       label: "Jeff's Fortune",
       href: "/jeff/fortune",
@@ -48,6 +48,7 @@
       milestone: "mailbox",
     },
     { label: "Thank you!", href: "/jeff/thanks", required: 150, hidden: false, milestone: "ending" },
+    { label: "Help Jeff?", href: "/jeff/help", required: 0, hidden: false, group: "utility" },
   ];
 
   const UNLOCK_LEVELS = MENU_LINKS.map((link) => link.required).filter(
@@ -118,16 +119,20 @@
             >
                 <h2 class="visually-hidden">Site menu</h2>
 
-                <ul id="site-menu-list">
-                    ${MENU_LINKS.map(menuLinkMarkup).join("")}
+                <ul id="site-menu-list" aria-label="Jeff's pages">
+                    ${MENU_LINKS.filter(link => link.group !== "utility").map(menuLinkMarkup).join("")}
+                </ul>
 
+                <div id="site-menu-divider" role="separator" hidden></div>
+
+                <ul id="site-menu-utilities" aria-label="Tools and settings">
                     <li>
                         <button
-                            id="accessibility-button"
+                            id="clear-all-button"
                             class="site-menu-item"
                             type="button"
                         >
-                            <span>Settings</span>
+                            <span>Clear All</span>
                         </button>
                     </li>
 
@@ -142,13 +147,15 @@
                         </button>
                     </li>
 
+                    ${MENU_LINKS.filter(link => link.group === "utility").map(menuLinkMarkup).join("")}
+
                     <li>
                         <button
-                            id="clear-all-button"
+                            id="accessibility-button"
                             class="site-menu-item"
                             type="button"
                         >
-                            <span>Clear All</span>
+                            <span>Settings</span>
                         </button>
                     </li>
                 </ul>
@@ -207,6 +214,7 @@
   const unlockLabel = document.getElementById("site-menu-unlock-label");
   const menuPanel = document.getElementById("site-menu-panel");
   const menuList = document.getElementById("site-menu-list");
+  const menuDivider = document.getElementById("site-menu-divider");
   const menuBackdrop = document.getElementById("site-menu-backdrop");
   const accessibilityButton = document.getElementById("accessibility-button");
   const accessibilityOverlay = document.getElementById("accessibility-overlay");
@@ -554,10 +562,13 @@
     const properties = [
       "--menu-item-font-size", "--menu-status-font-size",
       "--menu-item-padding-y", "--menu-item-padding-x",
-      "--menu-item-gap", "--menu-list-gap",
+      "--menu-item-gap", "--menu-list-gap", "--menu-group-gap",
     ];
     properties.forEach((property) => menuPanel.style.removeProperty(property));
+    menuPanel.classList.remove("is-overflowing");
+    menuDivider.hidden = true;
     if (menuPanel.scrollHeight <= menuPanel.clientHeight + 1) return;
+    menuDivider.hidden = false;
 
     const item = menuList.querySelector(".site-menu-item");
     const status = menuList.querySelector(".site-menu-unlock-status");
@@ -569,10 +580,10 @@
       parseFloat(itemStyle.paddingLeft),
       parseFloat(itemStyle.columnGap),
       parseFloat(getComputedStyle(menuList).rowGap),
+      parseFloat(getComputedStyle(menuPanel).rowGap),
     ];
 
-    // Shrink text and spacing together; leave scrolling available if the
-    // screen is still too short or the visitor has enlarged their text.
+    // Keep text readable; reduce spacing further before scrolling page links.
     for (const percent of [95, 90, 85, 80]) {
       properties.forEach((property, index) => {
         menuPanel.style.setProperty(
@@ -580,8 +591,16 @@
           `${(baseSizes[index] * percent / 100).toFixed(2)}px`,
         );
       });
-      if (menuPanel.scrollHeight <= menuPanel.clientHeight + 1) break;
+      if (menuPanel.scrollHeight <= menuPanel.clientHeight + 1) return;
     }
+    for (const percent of [70, 60]) {
+      properties.slice(2).forEach((property, index) => {
+        menuPanel.style.setProperty(property, `${(baseSizes[index + 2] * percent / 100).toFixed(2)}px`);
+      });
+      if (menuPanel.scrollHeight <= menuPanel.clientHeight + 1) return;
+    }
+    menuPanel.classList.add("is-overflowing");
+    if (menuPanel.scrollHeight > menuPanel.clientHeight + 1) menuPanel.classList.remove("is-overflowing");
   }
 
   function refreshProgress() {
@@ -649,6 +668,7 @@
 
     if (open) {
       menuPanel.scrollTop = 0;
+      menuList.scrollTop = 0;
       refreshProgress();
       hideUnlockNotice(true);
 
@@ -879,7 +899,8 @@
     },
 
     getUnlockRequirement(label) {
-      const link = MENU_LINKS.find((item) => item.label === label);
+      const link = MENU_LINKS.find((item) => item.label === label ||
+        (item.milestone === "gallery" && label === "Jeff Gallery"));
 
       return link ? link.required : null;
     },
