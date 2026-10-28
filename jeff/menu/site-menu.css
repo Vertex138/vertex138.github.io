@@ -174,23 +174,12 @@ html.site-menu-open #site-menu-panel {
   transition-delay: 0s;
 }
 
-#site-menu-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--menu-list-gap, 6px);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
 .site-menu-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--menu-item-gap, 16px);
   width: 100%;
   box-sizing: border-box;
-  padding: var(--menu-item-padding-y, 12px) var(--menu-item-padding-x, 14px);
 
   border: 1px solid transparent;
   border-radius: 8px;
@@ -198,7 +187,6 @@ html.site-menu-open #site-menu-panel {
   color: white;
 
   font: inherit;
-  font-size: var(--menu-item-font-size, clamp(15px, 2vw, 19px));
   line-height: 1.2;
   text-align: left;
   text-decoration: none;
@@ -233,7 +221,6 @@ html.site-menu-open #site-menu-panel {
 .site-menu-unlock-status {
   flex: 0 0 auto;
   font-family: Tahoma, sans-serif;
-  font-size: var(--menu-status-font-size, clamp(13px, 1.8vw, 15px));
   letter-spacing: 0.5px;
   white-space: nowrap;
 }
@@ -336,4 +323,56 @@ html.reduced-motion #site-menu-unlock-arrow.is-announcing {
   #site-menu-panel {
     width: 100vw;
   }
+}
+
+/* Keep older cached menu scripts compatible with the list layout. */
+#site-menu-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--menu-group-gap, 12px);
+  height: 100vh;
+  height: 100dvh;
+  box-sizing: border-box;
+}
+#site-menu-panel #site-menu-list,
+#site-menu-panel #site-menu-utilities {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  gap: var(--menu-list-gap, 6px);
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+#site-menu-panel #site-menu-list > li,
+#site-menu-panel #site-menu-utilities > li {
+  display: block;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+#site-menu-panel #site-menu-utilities { margin-top: auto; }
+#site-menu-panel #site-menu-divider {
+  flex: 0 0 2px;
+  height: 2px;
+  box-sizing: content-box;
+  border-top: 2px solid white;
+  border-bottom: 2px solid white;
+}
+#site-menu-panel .site-menu-item {
+  gap: var(--menu-item-gap, 16px);
+  padding: var(--menu-item-padding-y, 12px) var(--menu-item-padding-x, 14px);
+  font-size: var(--menu-item-font-size, clamp(15px, 2vw, 19px));
+}
+#site-menu-panel .site-menu-unlock-status {
+  font-size: var(--menu-status-font-size, clamp(13px, 1.8vw, 15px));
+}
+#site-menu-panel.is-overflowing { overflow-y: hidden; }
+#site-menu-panel.is-overflowing #site-menu-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
