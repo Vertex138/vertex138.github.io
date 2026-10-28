@@ -19,12 +19,15 @@
   const viewerFigure = document.getElementById("gallery-viewer-figure");
   const fullImage = document.getElementById("gallery-full-image");
   const fullImageId = document.getElementById("gallery-full-id");
+  const previousButton = document.getElementById("gallery-previous");
+  const nextButton = document.getElementById("gallery-next");
   const cardByImageId = new Map;
   let thumbnailMap = {};
   let imageMap = {};
   let loadObserver = null;
   let thumbnailOpacityFrame = null;
   let activeThumbnail = null;
+  let activeImageId = null;
   let viewerState = "closed";
   let viewerRequestId = 0;
   function isValidImageId(value) {
@@ -258,11 +261,13 @@
       }
       return difference;
     });
-    if (cards.every((card, index) => grid.children[index] === card)) return;
-    const focusedCard = grid.contains(document.activeElement) ? document.activeElement : null;
-    grid.append(...cards);
-    focusedCard?.focus({ preventScroll: true });
-    scheduleThumbnailOpacityUpdate();
+    if (cards.some((card, index) => grid.children[index] !== card)) {
+      const focusedCard = grid.contains(document.activeElement) ? document.activeElement : null;
+      grid.append(...cards);
+      focusedCard?.focus({ preventScroll: true });
+      scheduleThumbnailOpacityUpdate();
+    }
+    updateViewerNavigation();
   }
   function refreshGalleryUnlocks() {
     if (cardByImageId.size === 0) {
@@ -292,6 +297,34 @@
   }
   function clearViewerAnimationClasses() {
     viewerFigure.classList.remove("gallery-slide-in", "gallery-slide-out", "gallery-fade-in", "gallery-fade-out");
+  }
+  function getViewerNeighbors() {
+    const discovered = [...grid.children].filter(card => card.dataset.unlocked === "true");
+    const index = discovered.findIndex(card => Number(card.dataset.imageId) === activeImageId);
+    return {
+      previous: index > 0 ? discovered[index - 1] : null,
+      next: index >= 0 ? discovered[index + 1] ?? null : null
+    };
+  }
+  function updateViewerNavigation() {
+    const neighbors = getViewerNeighbors();
+    for (const [button, card, direction] of [
+      [previousButton, neighbors.previous, "Previous"],
+      [nextButton, neighbors.next, "Next"]
+    ]) {
+      if (!button) continue;
+      const imageId = card ? Number(card.dataset.imageId) : null;
+      button.querySelector("[id]").textContent = imageId === null ? "—" : formatImageId(imageId);
+      button.disabled = viewerState !== "open" || imageId === null;
+      button.setAttribute("aria-label", imageId === null
+        ? `No ${direction.toLowerCase()} discovered image`
+        : `${direction} image, ${formatImageId(imageId)}`);
+    }
+  }
+  function navigateFullImage(direction) {
+    if (viewerState !== "open") return;
+    const card = getViewerNeighbors()[direction < 0 ? "previous" : "next"];
+    if (card) openFullImage(Number(card.dataset.imageId), card, direction);
   }
   function playViewerAnimation(animationClass, duration) {
     clearViewerAnimationClasses();
@@ -341,16 +374,20 @@
     fullImage.removeAttribute("src");
     document.documentElement.classList.remove("gallery-viewer-open");
     viewerState = "closed";
+    activeImageId = null;
+    updateViewerNavigation();
     activeThumbnail?.focus();
     activeThumbnail = null;
   }
-  async function openFullImage(imageId, trigger) {
-    if (viewerState !== "closed") {
+  async function openFullImage(imageId, trigger, direction = 0) {
+    if ((viewerState !== "closed" && viewerState !== "open") || !getViewedImageIds().includes(imageId)) {
       return;
     }
     const filename = imageMap[imageId];
     activeThumbnail = trigger;
+    activeImageId = imageId;
     viewerState = "loading";
+    updateViewerNavigation();
     viewerRequestId += 1;
     const requestId = viewerRequestId;
     let preloader = null;
@@ -383,7 +420,9 @@
       }
       clearViewerAnimationClasses();
       viewerState = "open";
-      fullImage.focus();
+      updateViewerNavigation();
+      const navigationButton = direction < 0 ? previousButton : direction > 0 ? nextButton : null;
+      (navigationButton && !navigationButton.disabled ? navigationButton : fullImage).focus();
     } catch (error) {
       if (requestId !== viewerRequestId) {
         return;
@@ -407,6 +446,7 @@
       return;
     }
     viewerState = "closing";
+    updateViewerNavigation();
     const useReducedMotion = reducedMotionEnabled();
     await playViewerAnimation(useReducedMotion ? "gallery-fade-out" : "gallery-slide-out", useReducedMotion ? 350 : 450);
     finishClosingViewer();
@@ -415,7 +455,8 @@
     if (event.key !== "Tab" || viewer.hidden) {
       return;
     }
-    const focusable = viewerFigure.hidden ? [ viewerClose ] : [ viewerClose, fullImage ];
+    const focusable = viewerFigure.hidden ? [viewerClose]
+      : [viewerClose, ...viewerFigure.querySelectorAll('button:not(:disabled), [tabindex="0"]')];
     const first = focusable[0];
     const last = focusable[focusable.length - 1];
     if (event.shiftKey && document.activeElement === first) {
@@ -477,6 +518,8 @@
     }
   });
   viewerClose.addEventListener("click", closeFullImage);
+  previousButton?.addEventListener("click", () => navigateFullImage(-1));
+  nextButton?.addEventListener("click", () => navigateFullImage(1));
   retryButton.addEventListener("click", initializeGallery);
   document.addEventListener("keydown", event => {
     if (!viewer.hidden && event.key === "Escape") {

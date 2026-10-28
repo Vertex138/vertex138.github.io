@@ -56,10 +56,10 @@
     />
 
     <link rel="stylesheet" href="/jeff/menu/site-menu.css" />
-    <link rel="stylesheet" href="/jeff/gallery/gallery.css" />
+    <link rel="stylesheet" href="/jeff/gallery/gallery.css?v=viewer-navigation" />
 
     <script src="/jeff/menu/site-menu.js" defer></script>
-    <script src="/jeff/gallery/gallery.js" defer></script>
+    <script src="/jeff/gallery/gallery.js?v=viewer-navigation" defer></script>
   </head>
 
   <body>
@@ -100,7 +100,19 @@
 
       <figure id="gallery-viewer-figure" hidden>
         <img id="gallery-full-image" alt="" draggable="false" tabindex="0" />
-        <figcaption id="gallery-full-id"></figcaption>
+        <figcaption id="gallery-viewer-navigation">
+          <button id="gallery-previous" class="gallery-image-navigation" type="button"
+            aria-label="Previous discovered image" disabled>
+            <span class="gallery-navigation-arrow" aria-hidden="true">◀</span>
+            <span id="gallery-previous-id">—</span>
+          </button>
+          <span id="gallery-full-id" aria-live="polite" aria-atomic="true"></span>
+          <button id="gallery-next" class="gallery-image-navigation" type="button"
+            aria-label="Next discovered image" disabled>
+            <span id="gallery-next-id">—</span>
+            <span class="gallery-navigation-arrow" aria-hidden="true">▶</span>
+          </button>
+        </figcaption>
       </figure>
     </div>
   </body>
