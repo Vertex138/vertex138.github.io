@@ -69,6 +69,16 @@
         <p id="gallery-progress" aria-live="polite">Loading gallery…</p>
       </header>
 
+      <div id="gallery-toolbar">
+        <label for="gallery-sort">Sort by</label>
+        <select id="gallery-sort" name="sort" aria-controls="gallery-grid" disabled>
+          <option value="numeric-asc">Lowest to Highest</option>
+          <option value="numeric-desc">Highest to Lowest</option>
+          <option value="discovered-first">Discovered first</option>
+          <option value="hidden-first">Hidden first</option>
+        </select>
+      </div>
+
       <div id="gallery-grid" aria-label="Jeff image collection" aria-busy="true"></div>
 
       <section id="gallery-error" role="alert" hidden>

@@ -10,6 +10,7 @@
   const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
   const grid = document.getElementById("gallery-grid");
   const progress = document.getElementById("gallery-progress");
+  const sortControl = document.getElementById("gallery-sort");
   const errorPanel = document.getElementById("gallery-error");
   const retryButton = document.getElementById("gallery-retry-button");
   const viewer = document.getElementById("gallery-viewer");
@@ -244,6 +245,24 @@
     grid.setAttribute("aria-busy", "false");
     refreshGalleryUnlocks();
     observeThumbnailCards();
+    if (sortControl) sortControl.disabled = false;
+  }
+  function sortGalleryCards() {
+    const mode = sortControl?.value || "numeric-asc";
+    const cards = [...cardByImageId.values()].sort((a, b) => {
+      const difference = Number(a.dataset.imageId) - Number(b.dataset.imageId);
+      if (mode === "numeric-desc") return -difference;
+      if (mode === "discovered-first" || mode === "hidden-first") {
+        const unlockedDifference = Number(b.dataset.unlocked === "true") - Number(a.dataset.unlocked === "true");
+        return (mode === "hidden-first" ? -unlockedDifference : unlockedDifference) || difference;
+      }
+      return difference;
+    });
+    if (cards.every((card, index) => grid.children[index] === card)) return;
+    const focusedCard = grid.contains(document.activeElement) ? document.activeElement : null;
+    grid.append(...cards);
+    focusedCard?.focus({ preventScroll: true });
+    scheduleThumbnailOpacityUpdate();
   }
   function refreshGalleryUnlocks() {
     if (cardByImageId.size === 0) {
@@ -269,6 +288,7 @@
     cardByImageId.forEach((card, imageId) => {
       setCardUnlockState(card, viewedIds.has(imageId));
     });
+    sortGalleryCards();
   }
   function clearViewerAnimationClasses() {
     viewerFigure.classList.remove("gallery-slide-in", "gallery-slide-out", "gallery-fade-in", "gallery-fade-out");
@@ -408,6 +428,7 @@
   }
   async function initializeGallery() {
     grid.setAttribute("aria-busy", "true");
+    if (sortControl) sortControl.disabled = true;
     errorPanel.hidden = true;
     progress.textContent = "Loading gallery…";
     try {
@@ -429,7 +450,7 @@
     passive: true
   });
   window.addEventListener("storage", event => {
-    if (event.key === VIEWED_IMAGES_KEY) {
+    if (event.key === VIEWED_IMAGES_KEY || event.key === null) {
       refreshGalleryUnlocks();
     }
   });
@@ -441,6 +462,8 @@
     }
   });
   document.addEventListener("jeff:data-saver-changed", refreshGalleryUnlocks);
+  document.addEventListener("jeff:progress-changed", refreshGalleryUnlocks);
+  sortControl?.addEventListener("change", sortGalleryCards);
   viewer.addEventListener("click", event => {
     if (event.target === viewer) {
       closeFullImage();
