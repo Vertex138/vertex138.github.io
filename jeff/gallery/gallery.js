@@ -21,6 +21,7 @@
   const fullImageId = document.getElementById("gallery-full-id");
   const previousButton = document.getElementById("gallery-previous");
   const nextButton = document.getElementById("gallery-next");
+  const viewerNavigation = document.getElementById("gallery-viewer-navigation");
   const cardByImageId = new Map;
   let thumbnailMap = {};
   let imageMap = {};
@@ -30,6 +31,7 @@
   let activeImageId = null;
   let viewerState = "closed";
   let viewerRequestId = 0;
+  let cancelViewerAnimation = null;
   function isValidImageId(value) {
     return Number.isInteger(value) && value >= 1 && value <= TOTAL_IMAGE_GOAL;
   }
@@ -296,7 +298,38 @@
     sortGalleryCards();
   }
   function clearViewerAnimationClasses() {
-    viewerFigure.classList.remove("gallery-slide-in", "gallery-slide-out", "gallery-fade-in", "gallery-fade-out");
+    cancelViewerAnimation?.();
+    viewerFigure.classList.remove(
+      "gallery-slide-in-bottom", "gallery-slide-out-bottom",
+      "gallery-slide-in-left", "gallery-slide-out-left",
+      "gallery-slide-in-right", "gallery-slide-out-right",
+      "gallery-fade-in", "gallery-fade-out"
+    );
+  }
+  function fitViewerNavigation() {
+    if (!viewerNavigation || !previousButton || !nextButton || viewerFigure.hidden || viewer.hidden) return;
+    const width = viewer.clientWidth;
+    if (!width) return;
+    viewerNavigation.style.width = `${width}px`;
+    fullImageId.style.removeProperty("--gallery-id-size");
+    const style = getComputedStyle(viewer);
+    const leftEdge = parseFloat(style.paddingLeft) || 18;
+    const rightEdge = parseFloat(style.paddingRight) || 18;
+    viewerNavigation.style.left = `${(rightEdge - leftEdge) / 2}px`;
+    const previousWidth = previousButton.offsetWidth;
+    const nextWidth = nextButton.offsetWidth;
+    const gap = 8;
+    let idWidth = fullImageId.getBoundingClientRect().width;
+    const available = Math.max(1, width - leftEdge - rightEdge - previousWidth - nextWidth - 2 * gap);
+    if (idWidth > available) {
+      const size = parseFloat(getComputedStyle(fullImageId).fontSize);
+      fullImageId.style.setProperty("--gallery-id-size", `${size * available / idWidth}px`);
+      idWidth = fullImageId.getBoundingClientRect().width;
+    }
+    previousButton.style.left = `${Math.max(leftEdge + previousWidth / 2,
+      Math.min(width * 0.25, width / 2 - idWidth / 2 - gap - previousWidth / 2))}px`;
+    nextButton.style.left = `${Math.min(width - rightEdge - nextWidth / 2,
+      Math.max(width * 0.75, width / 2 + idWidth / 2 + gap + nextWidth / 2))}px`;
   }
   function getViewerNeighbors() {
     const discovered = [...grid.children].filter(card => card.dataset.unlocked === "true");
@@ -320,6 +353,7 @@
         ? `No ${direction.toLowerCase()} discovered image`
         : `${direction} image, ${formatImageId(imageId)}`);
     }
+    fitViewerNavigation();
   }
   function navigateFullImage(direction) {
     if (viewerState !== "open") return;
@@ -338,6 +372,7 @@
         finished = true;
         clearTimeout(fallbackTimer);
         viewerFigure.removeEventListener("animationend", handleAnimationEnd);
+        if (cancelViewerAnimation === finish) cancelViewerAnimation = null;
         resolve();
       };
       const handleAnimationEnd = event => {
@@ -346,6 +381,7 @@
         }
       };
       viewerFigure.addEventListener("animationend", handleAnimationEnd);
+      cancelViewerAnimation = finish;
       viewerFigure.classList.add(animationClass);
       fallbackTimer = setTimeout(finish, duration + 200);
     });
@@ -384,37 +420,58 @@
       return;
     }
     const filename = imageMap[imageId];
-    activeThumbnail = trigger;
-    activeImageId = imageId;
-    viewerState = "loading";
+    const navigating = viewerState === "open" && direction !== 0;
+    if (!navigating) {
+      activeThumbnail = trigger;
+      activeImageId = imageId;
+    }
+    viewerState = navigating ? "switching" : "loading";
     updateViewerNavigation();
     viewerRequestId += 1;
     const requestId = viewerRequestId;
     let preloader = null;
     viewer.hidden = false;
-    viewerFigure.hidden = true;
-    viewerStatus.hidden = false;
-    viewerStatus.textContent = "Loading image…";
+    if (!navigating) {
+      viewerFigure.hidden = true;
+      viewerStatus.hidden = false;
+      viewerStatus.textContent = "Loading image…";
+    }
     document.documentElement.classList.add("gallery-viewer-open");
     viewerClose.focus();
-    if (!filename) {
-      viewerStatus.textContent = "This image could not be found.";
-      viewerState = "error";
-      return;
-    }
     try {
-      preloader = await preloadImage(imageSource(IMAGE_DIRECTORY, filename));
+      if (!filename) throw new Error(`Image ${formatImageId(imageId)} is missing from images.json.`);
+      const useReducedMotion = reducedMotionEnabled();
+      const outgoing = navigating
+        ? playViewerAnimation(useReducedMotion ? "gallery-fade-out"
+          : direction < 0 ? "gallery-slide-out-right" : "gallery-slide-out-left", useReducedMotion ? 350 : 450)
+          .then(() => {
+            if (requestId === viewerRequestId && viewerState === "switching") {
+              viewerState = "loading";
+              viewerFigure.hidden = true;
+              viewerStatus.hidden = false;
+              viewerStatus.textContent = "Loading image…";
+            }
+          })
+        : Promise.resolve();
+      await Promise.all([
+        preloadImage(imageSource(IMAGE_DIRECTORY, filename)).then(image => { preloader = image; }),
+        outgoing
+      ]);
       if (requestId !== viewerRequestId) {
         return;
       }
+      activeThumbnail = trigger;
+      activeImageId = imageId;
       fullImage.src = preloader.src;
       fullImage.alt = `Full-size image ${formatImageId(imageId)}`;
       fullImageId.textContent = formatImageId(imageId);
       viewerStatus.hidden = true;
       viewerFigure.hidden = false;
       viewerState = "opening";
-      const useReducedMotion = reducedMotionEnabled();
-      await playViewerAnimation(useReducedMotion ? "gallery-fade-in" : "gallery-slide-in", useReducedMotion ? 350 : 550);
+      updateViewerNavigation();
+      const incoming = direction < 0 ? "gallery-slide-in-left"
+        : direction > 0 ? "gallery-slide-in-right" : "gallery-slide-in-bottom";
+      await playViewerAnimation(useReducedMotion ? "gallery-fade-in" : incoming, useReducedMotion ? 350 : 550);
       if (requestId !== viewerRequestId) {
         return;
       }
@@ -428,10 +485,11 @@
         return;
       }
       console.error(error);
-      viewerStatus.hidden = false;
-      viewerStatus.textContent = "This image could not be loaded.";
-      viewerFigure.hidden = true;
       viewerState = "error";
+      clearViewerAnimationClasses();
+      viewerStatus.hidden = false;
+      viewerStatus.textContent = filename ? "This image could not be loaded." : "This image could not be found.";
+      viewerFigure.hidden = true;
     } finally {
       releasePreloader(preloader);
     }
@@ -440,7 +498,7 @@
     if (viewerState === "closed" || viewerState === "closing") {
       return;
     }
-    viewerRequestId += 1;
+    const requestId = ++viewerRequestId;
     if (viewerState === "loading" || viewerState === "error" || viewerFigure.hidden) {
       finishClosingViewer();
       return;
@@ -448,8 +506,8 @@
     viewerState = "closing";
     updateViewerNavigation();
     const useReducedMotion = reducedMotionEnabled();
-    await playViewerAnimation(useReducedMotion ? "gallery-fade-out" : "gallery-slide-out", useReducedMotion ? 350 : 450);
-    finishClosingViewer();
+    await playViewerAnimation(useReducedMotion ? "gallery-fade-out" : "gallery-slide-out-bottom", useReducedMotion ? 350 : 450);
+    if (requestId === viewerRequestId) finishClosingViewer();
   }
   function trapViewerFocus(event) {
     if (event.key !== "Tab" || viewer.hidden) {
@@ -490,6 +548,13 @@
   window.addEventListener("resize", scheduleThumbnailOpacityUpdate, {
     passive: true
   });
+  window.addEventListener("resize", fitViewerNavigation, { passive: true });
+  window.visualViewport?.addEventListener("resize", fitViewerNavigation, { passive: true });
+  document.fonts?.ready.then(fitViewerNavigation);
+  if ("ResizeObserver" in window) {
+    const navigationObserver = new ResizeObserver(fitViewerNavigation);
+    [viewer, fullImageId, previousButton, nextButton].filter(Boolean).forEach(element => navigationObserver.observe(element));
+  }
   window.addEventListener("storage", event => {
     if (event.key === VIEWED_IMAGES_KEY || event.key === null) {
       refreshGalleryUnlocks();
