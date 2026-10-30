@@ -7,7 +7,6 @@ const NEW_IMAGE_GUARANTEE_INTERVAL = 3;
 const NEW_IMAGE_GUARANTEE_STEP = .05;
 
 const IMAGE_DIRECTORY = "images/";
-let consecutiveSlowImageLoads = 0;
 
 function imageSource(filename) {
   const source = IMAGE_DIRECTORY + encodeURIComponent(filename);
@@ -141,10 +140,19 @@ function showIntroductionIfNeeded() {
   if (introductionWasAcknowledged()) {
     return;
   }
+  updateIntroductionDataSaverNotice();
   document.getElementById("intro-overlay").hidden = false;
   requestAnimationFrame(() => {
     document.getElementById("intro-dismiss-button").focus();
   });
+}
+
+function updateIntroductionDataSaverNotice() {
+  const enabled = window.JeffSite?.dataSaverEnabled() ?? false;
+  const state = document.getElementById("intro-data-saver-state");
+  const effect = document.getElementById("intro-data-saver-effect");
+  if (state) state.textContent = enabled ? "enabled" : "disabled";
+  if (effect) effect.textContent = enabled ? "may be low quality" : "may take a while to load";
 }
 
 function dismissIntroduction() {
@@ -348,20 +356,8 @@ function playImageAnimation(element, animationClass, expectedDuration) {
 function preloadImage(source) {
   return new Promise((resolve, reject) => {
     const preloader = new Image;
-    const startedAt = performance.now();
-    preloader.onload = () => {
-      const loadTime = performance.now() - startedAt;
-      consecutiveSlowImageLoads = loadTime > 1000
-        ? consecutiveSlowImageLoads + 1
-        : 0;
-      if (consecutiveSlowImageLoads >= 3) {
-        window.JeffSite?.enableDataSaverAutomatically();
-        consecutiveSlowImageLoads = 0;
-      }
-      resolve(preloader);
-    };
+    preloader.onload = () => resolve(preloader);
     preloader.onerror = () => {
-      consecutiveSlowImageLoads = 0;
       preloader.removeAttribute("src");
       reject(new Error(`Could not preload image: ${source}`));
     };
@@ -568,6 +564,7 @@ document.getElementById("collection-continue-button").addEventListener("click", 
 document.getElementById("retry-button").addEventListener("click", retryLastFailedAction);
 
 document.getElementById("intro-dismiss-button").addEventListener("click", dismissIntroduction);
+document.addEventListener("jeff:data-saver-changed", updateIntroductionDataSaverNotice);
 
 document.getElementById("intro-overlay").addEventListener("keydown", event => {
   if (event.key === "Escape") {
