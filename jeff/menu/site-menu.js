@@ -287,7 +287,7 @@
   const forceNewButton = document.getElementById("force-new-button");
   const clearAllButton = document.getElementById("clear-all-button");
 
-  // "off" is an explicit choice; an unset preference may be enabled after slow loads.
+  // Saved choices, including the old automatic mode, remain unchanged.
   let dataSaverMode = null;
   try {
     const storedMode = localStorage.getItem(STORAGE_KEYS.dataSaver);
@@ -315,6 +315,21 @@
     if (wasEnabled !== dataSaverEnabled()) {
       document.dispatchEvent(new CustomEvent("jeff:data-saver-changed"));
     }
+  }
+
+  function initializeDataSaverDefault() {
+    if (dataSaverMode !== null || !document.getElementById("random-image")) return;
+    try {
+      if (localStorage.getItem(STORAGE_KEYS.introduction) === "true") return;
+    } catch (error) {
+      console.warn("Could not retrieve the introduction state:", error);
+    }
+    const agent = navigator.userAgent || "";
+    const mobile = navigator.userAgentData?.mobile === true ||
+      /Android|iPhone|iPad|iPod|Mobile|Tablet|Silk|Kindle|PlayBook/i.test(agent) ||
+      (/Macintosh|MacIntel/i.test(`${agent} ${navigator.platform || ""}`) && navigator.maxTouchPoints > 1) ||
+      (navigator.maxTouchPoints > 0 && window.matchMedia("(pointer: coarse) and (hover: none)").matches);
+    setDataSaverMode(mobile ? "on" : "off");
   }
 
   function dataSaverUrl(source) {
@@ -936,6 +951,7 @@
     }
   });
 
+  initializeDataSaverDefault();
   milestoneTracker = createMilestoneTracker();
   applyAccessibilitySettings();
   root.classList.toggle("data-saver", dataSaverEnabled());
@@ -946,13 +962,8 @@
     reducedMotionEnabled: () => root.classList.contains("reduced-motion"),
     dataSaverEnabled,
     dataSaverUrl,
-    enableDataSaverAutomatically() {
-      if (dataSaverMode !== null) {
-        return false;
-      }
-      setDataSaverMode("auto");
-      return true;
-    },
+    // Cached homepage scripts may still call this retired load-speed check.
+    enableDataSaverAutomatically: () => false,
 
     getUnlockRequirement(label) {
       const link = MENU_LINKS.find((item) => item.label === label ||
