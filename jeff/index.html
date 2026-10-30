@@ -31,8 +31,8 @@
     <link rel="stylesheet" href="menu/site-menu.css" />
     <link rel="stylesheet" href="styles.css?v=4" />
 
-    <script src="menu/site-menu.js" defer></script>
-    <script src="app.js" defer></script>
+    <script src="menu/site-menu.js?v=device-data-saver" defer></script>
+    <script src="app.js?v=device-data-saver" defer></script>
   </head>
 
   <body>
@@ -76,8 +76,14 @@
         </p>
 
         <p id="intro-settings">
-          Need a different viewing experience? Open
-          <strong>Settings</strong> in the menu to adjust Data Saver, Reduced Motion, and Simplify Font.
+          Need a different viewing experience? Tap the
+          <strong>Menu Icon <span style="font-family: var(--menu-icon-font)">(≡)</span></strong>
+          in the top left corner of your screen, then select <strong>Settings</strong>
+          on the bottom to adjust Data Saver, Reduced Motion, and Simplify Font settings.
+          <br><br>
+          <strong>Data Saver</strong> has been <strong id="intro-data-saver-state">disabled</strong>
+          by default for your device. Pages <strong id="intro-data-saver-effect">may take a while to load</strong>
+          with this setting.
         </p>
 
         <p id="intro-storage">
