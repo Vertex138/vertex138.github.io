@@ -9,7 +9,7 @@
     ["kitchen", "Jeff invited you to his biscuit venture"],
     ["fortune", "Jeff offered to tell your fortune"],
     ["mailbox", "Jeff opened his mailbox to you"],
-    ["ending", "Jeff presented his final show"],
+    ["ending", "Jeff presented his final show"]
   ];
 
   function hasAccess() {
