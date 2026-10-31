@@ -3,13 +3,13 @@
   const root = document.documentElement;
   const rows = [
     ["arrived", "You first met Jeff"],
-    ["gallery", "You unlocked Jeff's photo album"],
-    ["mood", "You unlocked Jeff's emotional forecast"],
+    ["gallery", "Jeff's began sharing his photo album"],
+    ["mood", "Jeff began sharing his feelingswith you"],
     ["faq", "Jeff and his staff agreed to questions"],
-    ["kitchen", "Jeff opened his biscuit business to you"],
+    ["kitchen", "Jeff invited you to his biscuit venture"],
     ["fortune", "Jeff offered to tell your fortune"],
     ["mailbox", "Jeff opened his mailbox to you"],
-    ["ending", "You unlocked the final meow"],
+    ["ending", "Jeff presented his final show"],
   ];
 
   function hasAccess() {
