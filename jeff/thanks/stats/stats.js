@@ -3,8 +3,8 @@
   const root = document.documentElement;
   const rows = [
     ["arrived", "You first met Jeff"],
-    ["gallery", "Jeff's began sharing his photo album"],
-    ["mood", "Jeff began sharing his feelingswith you"],
+    ["gallery", "Jeff began sharing his photo album"],
+    ["mood", "Jeff began sharing his feelings with you"],
     ["faq", "Jeff and his staff agreed to questions"],
     ["kitchen", "Jeff invited you to his biscuit venture"],
     ["fortune", "Jeff offered to tell your fortune"],
@@ -95,7 +95,7 @@
       const end = stats?.dates.ending;
       appendRow("journey", "Your journey with Jeff lasted", start && end && end >= start
         ? formatDuration(end - start) : missingDate);
-      note.hidden = !stats?.legacy;
+      if (note) note.hidden = !stats?.legacy;
       puzzleStatus.textContent = stats?.dates.puzzleFinished
         ? "...and you even finished the hidden puzzle!"
         : stats?.dates.puzzleFound
