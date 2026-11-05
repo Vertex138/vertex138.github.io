@@ -148,6 +148,20 @@ body {
   -webkit-user-drag: none;
 }
 
+.gallery-thumbnail-frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: #000000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s linear;
+}
+
+.gallery-thumbnail-frame.is-missing-dark::after {
+  opacity: 1;
+}
+
 .gallery-thumbnail-placeholder {
   position: absolute;
   inset: 0;

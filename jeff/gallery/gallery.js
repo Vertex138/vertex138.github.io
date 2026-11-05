@@ -8,6 +8,7 @@
   const MISSING_DIRECTORY = `${THUMB_DIRECTORY}missing/`;
   const MISSING_CONFIG_SOURCE = `${MISSING_DIRECTORY}amount.json`;
   const MISSING_IMAGE_EXTENSION = ".jpg";
+  const MISSING_FADE_MS = 150;
   const THUMB_MAP_SOURCE = `${SITE_DIRECTORY}thumbs.json`;
   const IMAGE_MAP_SOURCE = `${SITE_DIRECTORY}images.json`;
   const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -26,6 +27,7 @@
   const nextButton = document.getElementById("gallery-next");
   const viewerNavigation = document.getElementById("gallery-viewer-navigation");
   const cardByImageId = new Map;
+  const missingPreloads = new Map;
   let thumbnailMap = {};
   let imageMap = {};
   let missingAmounts = null;
@@ -89,10 +91,29 @@
     const source = directory + encodeURIComponent(filename);
     return window.JeffSite?.dataSaverUrl(source) ?? source;
   }
+  function missingThumbnailSource(variant, number) {
+    return MISSING_DIRECTORY + encodeURIComponent(`t_${variant}${number}${MISSING_IMAGE_EXTENSION}`);
+  }
+  function preloadMissingThumbnails() {
+    for (const variant of ["a", "b"]) {
+      for (let number = 1; number <= missingAmounts[variant]; number += 1) {
+        const source = missingThumbnailSource(variant, number);
+        if (missingPreloads.has(source)) continue;
+        missingPreloads.set(source, preloadImage(source).then(async image => {
+          await image.decode?.();
+          return image;
+        }).catch(error => {
+          console.warn("Could not preload a missing thumbnail:", error);
+          missingPreloads.delete(source);
+          return null;
+        }));
+      }
+    }
+  }
   function getThumbnailSource(imageId, unlocked, variant = "a") {
     if (!unlocked || !thumbnailMap[imageId]) {
       const number = imageId % missingAmounts[variant] + 1;
-      return MISSING_DIRECTORY + encodeURIComponent(`t_${variant}${number}${MISSING_IMAGE_EXTENSION}`);
+      return missingThumbnailSource(variant, number);
     }
     return imageSource(THUMB_DIRECTORY, thumbnailMap[imageId]);
   }
@@ -123,7 +144,6 @@
     image.addEventListener("load", () => {
       if (image.parentElement !== frame) return;
       frame.classList.add("has-image");
-      if (card.dataset.missingFadePending === "true") fadeMissingThumbnail(card, image);
     });
     image.addEventListener("error", () => {
       if (image.parentElement !== frame) return;
@@ -141,7 +161,7 @@
     const imageId = Number(card.dataset.imageId);
     const oldSource = card.dataset.source;
     const newSource = getThumbnailSource(imageId, unlocked, card.dataset.missingVariant);
-    if (unlocked) delete card.dataset.missingFadePending;
+    if (unlocked) card.querySelector(".gallery-thumbnail-frame").classList.remove("is-missing-dark");
     card.dataset.unlocked = String(unlocked);
     card.dataset.source = newSource;
     card.classList.toggle("is-locked", !unlocked);
@@ -153,25 +173,46 @@
       }
     }
   }
-  function animateLockedCard(card) {
+  function fadeMissingThumbnail(frame, dark) {
+    if (frame.classList.contains("is-missing-dark") === dark) return Promise.resolve();
+    void frame.offsetWidth;
+    return new Promise(resolve => {
+      const finish = event => {
+        if (event && (event.target !== frame || event.propertyName !== "opacity" || event.pseudoElement !== "::after")) return;
+        clearTimeout(timer);
+        frame.removeEventListener("transitionend", finish);
+        resolve();
+      };
+      frame.addEventListener("transitionend", finish);
+      const timer = setTimeout(finish, MISSING_FADE_MS + 100);
+      frame.classList.toggle("is-missing-dark", dark);
+    });
+  }
+  async function animateLockedCard(card) {
+    if (card.dataset.missingTransition === "true") return;
+    card.dataset.missingTransition = "true";
     card.classList.remove("shake-locked");
     void card.offsetWidth;
     card.classList.add("shake-locked");
-  }
-  function fadeMissingThumbnail(card, image) {
-    delete card.dataset.missingFadePending;
-    image.classList.remove("gallery-missing-fade");
-    void image.offsetWidth;
-    image.classList.add("gallery-missing-fade");
+    const frame = card.querySelector(".gallery-thumbnail-frame");
+    try {
+      await fadeMissingThumbnail(frame, true);
+      if (card.dataset.unlocked === "true" || !card.isConnected) return;
+      const source = getThumbnailSource(Number(card.dataset.imageId), false, "b");
+      await missingPreloads.get(source);
+      if (card.dataset.unlocked === "true" || !card.isConnected) return;
+      card.dataset.missingVariant = "b";
+      setCardUnlockState(card, false);
+      const image = frame.querySelector("img");
+      await image?.decode?.().catch(() => {});
+    } finally {
+      await fadeMissingThumbnail(frame, false);
+      delete card.dataset.missingTransition;
+    }
   }
   function handleThumbnailActivation(card) {
     if (card.dataset.unlocked !== "true") {
       animateLockedCard(card);
-      card.dataset.missingVariant = "b";
-      card.dataset.missingFadePending = "true";
-      setCardUnlockState(card, false);
-      const image = card.querySelector("img");
-      if (image?.complete && image.naturalWidth > 0) fadeMissingThumbnail(card, image);
       return;
     }
     openFullImage(Number(card.dataset.imageId), card);
@@ -569,6 +610,7 @@
         fetchImageMap(IMAGE_MAP_SOURCE, "images.json"),
         fetchMissingAmounts()
       ]);
+      preloadMissingThumbnails();
       renderGallery();
     } catch (error) {
       console.error(error);
