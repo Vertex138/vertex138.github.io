@@ -5,6 +5,9 @@
   const SITE_DIRECTORY = "/jeff/";
   const THUMB_DIRECTORY = `${SITE_DIRECTORY}thumbs/`;
   const IMAGE_DIRECTORY = `${SITE_DIRECTORY}images/`;
+  const MISSING_DIRECTORY = `${THUMB_DIRECTORY}missing/`;
+  const MISSING_CONFIG_SOURCE = `${MISSING_DIRECTORY}amount.json`;
+  const MISSING_IMAGE_EXTENSION = ".jpg";
   const THUMB_MAP_SOURCE = `${SITE_DIRECTORY}thumbs.json`;
   const IMAGE_MAP_SOURCE = `${SITE_DIRECTORY}images.json`;
   const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -25,6 +28,7 @@
   const cardByImageId = new Map;
   let thumbnailMap = {};
   let imageMap = {};
+  let missingAmounts = null;
   let loadObserver = null;
   let thumbnailOpacityFrame = null;
   let activeThumbnail = null;
@@ -69,13 +73,26 @@
     }
     return normalizeImageMap(await response.json(), sourceName);
   }
+  async function fetchMissingAmounts() {
+    const response = await fetch(MISSING_CONFIG_SOURCE, { cache: "no-cache" });
+    if (!response.ok) {
+      throw new Error(`Could not load thumbs/missing/amount.json: ${response.status}`);
+    }
+    const amounts = await response.json();
+    if (!amounts || Array.isArray(amounts) || !["a", "b"].every(key =>
+      Number.isSafeInteger(amounts[key]) && amounts[key] > 0)) {
+      throw new Error("thumbs/missing/amount.json must contain positive integers for a and b.");
+    }
+    return { a: amounts.a, b: amounts.b };
+  }
   function imageSource(directory, filename) {
     const source = directory + encodeURIComponent(filename);
     return window.JeffSite?.dataSaverUrl(source) ?? source;
   }
-  function getThumbnailSource(imageId, unlocked) {
+  function getThumbnailSource(imageId, unlocked, variant = "a") {
     if (!unlocked || !thumbnailMap[imageId]) {
-      return imageSource(THUMB_DIRECTORY, "t_missing.jpg");
+      const number = imageId % missingAmounts[variant] + 1;
+      return MISSING_DIRECTORY + encodeURIComponent(`t_${variant}${number}${MISSING_IMAGE_EXTENSION}`);
     }
     return imageSource(THUMB_DIRECTORY, thumbnailMap[imageId]);
   }
@@ -99,19 +116,23 @@
     image.loading = "lazy";
     image.decoding = "async";
     image.draggable = false;
-    if (card.dataset.source === getThumbnailSource(Number(card.dataset.imageId), false)) {
+    const fallbackSource = getThumbnailSource(Number(card.dataset.imageId), false, card.dataset.missingVariant);
+    if (card.dataset.source === fallbackSource) {
       image.dataset.usingFallback = "true";
     }
     image.addEventListener("load", () => {
+      if (image.parentElement !== frame) return;
       frame.classList.add("has-image");
+      if (card.dataset.missingFadePending === "true") fadeMissingThumbnail(card, image);
     });
     image.addEventListener("error", () => {
+      if (image.parentElement !== frame) return;
       frame.classList.remove("has-image");
       if (image.dataset.usingFallback === "true") {
         return;
       }
       image.dataset.usingFallback = "true";
-      image.src = getThumbnailSource(Number(card.dataset.imageId), false);
+      image.src = fallbackSource;
     });
     image.src = card.dataset.source;
     frame.append(image);
@@ -119,7 +140,8 @@
   function setCardUnlockState(card, unlocked) {
     const imageId = Number(card.dataset.imageId);
     const oldSource = card.dataset.source;
-    const newSource = getThumbnailSource(imageId, unlocked);
+    const newSource = getThumbnailSource(imageId, unlocked, card.dataset.missingVariant);
+    if (unlocked) delete card.dataset.missingFadePending;
     card.dataset.unlocked = String(unlocked);
     card.dataset.source = newSource;
     card.classList.toggle("is-locked", !unlocked);
@@ -136,9 +158,20 @@
     void card.offsetWidth;
     card.classList.add("shake-locked");
   }
+  function fadeMissingThumbnail(card, image) {
+    delete card.dataset.missingFadePending;
+    image.classList.remove("gallery-missing-fade");
+    void image.offsetWidth;
+    image.classList.add("gallery-missing-fade");
+  }
   function handleThumbnailActivation(card) {
     if (card.dataset.unlocked !== "true") {
       animateLockedCard(card);
+      card.dataset.missingVariant = "b";
+      card.dataset.missingFadePending = "true";
+      setCardUnlockState(card, false);
+      const image = card.querySelector("img");
+      if (image?.complete && image.naturalWidth > 0) fadeMissingThumbnail(card, image);
       return;
     }
     openFullImage(Number(card.dataset.imageId), card);
@@ -531,7 +564,11 @@
     errorPanel.hidden = true;
     progress.textContent = "Loading gallery…";
     try {
-      [thumbnailMap, imageMap] = await Promise.all([ fetchImageMap(THUMB_MAP_SOURCE, "thumbs.json"), fetchImageMap(IMAGE_MAP_SOURCE, "images.json") ]);
+      [thumbnailMap, imageMap, missingAmounts] = await Promise.all([
+        fetchImageMap(THUMB_MAP_SOURCE, "thumbs.json"),
+        fetchImageMap(IMAGE_MAP_SOURCE, "images.json"),
+        fetchMissingAmounts()
+      ]);
       renderGallery();
     } catch (error) {
       console.error(error);
